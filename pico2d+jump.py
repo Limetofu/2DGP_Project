@@ -12,28 +12,37 @@ JumpTime = 0.0
 JumpHeight = 0
 JumpPower = 50.0
 
-JumpKeyPressed = False
+JumpKeyPressed = 0
+
+JumpAgain = 0
 
 '''  '''
 
 
 def Jump():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime
+    global JumpAgain
+    global y
 
+    # space를 누르지 않으면, 종료
     if JumpKeyPressed == 0:
         return
     
     JumpHeight = (JumpTime * JumpTime - JumpPower * JumpTime) / 2.0
     JumpTime += 0.11
 
-    if JumpTime > JumpPower:
+    if JumpTime > JumpPower and y - JumpHeight <= 100:
         JumpTime = 0
+        y = y - JumpHeight
         JumpHeight = 0
         JumpKeyPressed = False
+        JumpAgain = False
 
 def handle_events():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime
     global running
+    global JumpAgain
+    global y
 
     events = get_events()
     for event in events:
@@ -41,7 +50,12 @@ def handle_events():
             running = False
         elif event.type == SDL_KEYDOWN:
             if event.key == SDLK_SPACE:
-                JumpKeyPressed = True
+                if (JumpKeyPressed == False):
+                    JumpKeyPressed = True
+                elif (JumpKeyPressed == True and JumpAgain == False):
+                    JumpAgain = True
+                    y = y - JumpHeight
+                    JumpTime = 0.0
             elif event.key == SDLK_ESCAPE:
                 running = False
 
