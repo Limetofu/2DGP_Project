@@ -17,7 +17,7 @@ open_canvas(SCREEN_WD, SCREEN_HT)
 
  # 중력 벡터 선언, sleep 여부 지정가능
  # 월드객체 생성
-world = b2World(gravity = (0, -9.8), doSleep = True)
+world = b2World(gravity = (0, -30), doSleep = True)
 
  # ground box 정의
 ground1BodyDef = b2BodyDef()
@@ -28,7 +28,7 @@ ground1BodyDef.position.Set(0, 20)
 ground1Body = world.CreateBody(ground1BodyDef)
  # 월드객체를 이용, body 생성
 ground1Shape = b2PolygonShape()
-ground1Shape.SetAsBox(400, 100)
+ground1Shape.SetAsBox(190, 100)
 
 ground1Body.CreateFixture(shape = ground1Shape)
 
@@ -37,7 +37,7 @@ box1BodyDef.type = b2_dynamicBody
 box1BodyDef.position.Set(200, 300)
 box1Body = world.CreateBody(box1BodyDef)
 box1Shape = b2PolygonShape()
-box1Shape.SetAsBox(40, 20)
+box1Shape.SetAsBox(20, 20)
 
 box1FixtureDef = b2FixtureDef()
 box1FixtureDef.shape = box1Shape
@@ -58,7 +58,8 @@ colors = {
 
 running = True
 while running:
-    for event in pygame.event.get():
+    event_s = get_events()
+    for event in event_s:
         if event.type == QUIT:
             running = False
             continue
@@ -72,22 +73,20 @@ while running:
         for fixture in body.fixtures:
             shape = fixture.shape
             vertices = [(body.transform * v) * PPM for v in shape.vertices]
-            print(vertices)
             vertices = [(v[0], (SCREEN_HT - v[1])) for v in vertices]
             pygame.draw.polygon(screen, colors[body.type], vertices)
-    
+            clear_canvas()
+
+            pico2d.draw_rectangle(vertices[0][0], vertices[0][1], vertices[2][0], vertices[2][1])
+
+            update_canvas()
+                
     world.Step(timeStep, velocity, positers)
     pygame.display.flip()
     clock.tick(TARGET_FPS)
 
-
-
-    clear_canvas()
-    #draw_rectangle()
-    update_canvas()
-
     delay(0.01)
-    get_events()    
+    get_events()
 
 
 pygame.quit()

@@ -50,9 +50,6 @@ def Move():
 
     MoveHeight = (MoveTime * MoveTime - MovePower * MoveTime) / 5.0
     # 변곡점때, 
-    MoveTime
-
-
 
 
 
@@ -79,8 +76,8 @@ def handle_events():
 
 open_canvas(1280, 720)
 
-black_rect = load_image('black_rect.png')
-hero = load_image('knight_hero.png')
+black_rect = load_image('resources/black_rect.png')
+hero = load_image('resources/knight_hero.png')
 
 running = 1
 x_frame = 0
@@ -88,6 +85,13 @@ y_frame = 15
 count = 0
 
 if __name__ == '__main__':
+    file = open("grid_data.txt", "r")
+        # 파일 열기. 뒤의 인자는 C와 동일
+    strings = file.readlines()
+        # 개행 문자 포함, 리스트 형식 return
+    print(strings)
+    file.close()
+
     while running:
         clear_canvas()
         black_rect.draw(x, y - JumpHeight, 60, 100)
@@ -100,7 +104,6 @@ if __name__ == '__main__':
             x_frame = (x_frame + 1) % 16
             count = 0
         update_canvas()
-
         handle_events()
         Jump()
 

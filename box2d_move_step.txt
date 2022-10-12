@@ -1,0 +1,64 @@
+첫째, 실제로 속도를 명시적으로 지정한다.
+
+ pBody->SetLinearVelocity( b2Vec2( 100, 0) );
+
+ 이는 지극히 예상되는 바와 같이 실행 시 해당 강체는 우측으로 빠르게 이동한다.
+
+
+
+ 둘째, 실제로 속도를 명시하되, 점진적으로 증가시키어 속도를 지정한다.
+
+ b2Vec2 velocityVec2 = pBody->GetLinearVelocity();
+ velocityVec2.x = b2Min( velocityVec2.x + 0.05f, 100.0f ); //0.05만큼 증가시킨다.
+ pBody->SetLinearVelocity( velocityVec2 );
+
+ 이는 매 시연(스텝)마다 강체의 선속도를 0, 0.05, 0.10, 0.15... 99.95, 100.0 이 되도록 만든다.
+
+ 셋째, 힘을 가하여 서서히 속력을 변화시킨다.
+
+ b2Vec2 velocity = pBody->GetLinearVelocity();
+ float force = (velocity.x < 100.0 ) ? ( 50 ) : ( 0.0 );
+ pBody->ApplyForce( b2Vec2(force, 0), body->GetWorldCenter() );
+
+ 속력이 100에 도달할 때까지 50의 힘을 가한다. 이는 힘의 크기에 따라 최대속도에 도달하는데 걸리는 시간이 결정된다. 물리 법칙을 통해 유사하게 선운동을 모사한 경우이다.
+
+
+
+ 넷째, 물리 법칙의 감초와 같은 공식은 F=ma를 적용, 힘을 가하여 속도를 변화시킨다.
+
+ 가속도의 정의는 속도의 변화량이다. 모든 변화의 기준은 시간이다.
+
+ b2Vec2 velocity = pBody->GetLinearVelocity();
+ float targetVelocity = 0.0f;
+
+ targetVelocity = 100.0f;
+
+ float velocityDifferential  = targetVelocity - velocity.x;
+ float force = body->GetMass() * velocityDifferential / ( 1/60.0 );
+ pBody->ApplyForce( b2Vec2(force, 0), pBody->GetWorldCenter(), true);
+
+ 이는 등가속도 운동이 아닌 가속도 운동으로 초기에 강한 힘이 가해지고 일정 속도에 도달하면 매우 약한 힘이 가해진다. 세번째와 유사한 방법이나, 1초내에 최대속도에 도달한다.
+
+
+
+ 다섯째, 충격량을 적용하는 방법이다. 물체가 충돌하면, 서로의 속도가 변하게 된다. 강체를 가상의 물체와 충돌시켜보는 것이다.
+
+ b2Vec2 velocity = pBody->GetLinearVelocity();
+ float targetVelocity = 100.0;
+
+ float velocityDifferential = targetVelocity - velocity.x;
+ float impulse = pBody->GetMass() * velocityDifferential;
+ pBody->ApplyLinearImpulse( b2Vec2(impulse, 0), pBody->GetWorldCenter(), true);
+
+
+
+ 여섯째, 충격량은 그 효과가 즉시 이루어진다. 이에 점진적으로 속도를 변화시키며 적용시키기 위해 다음과 같이 코드를 변경한다.
+
+ b2Vec2 velocity = pBody->GetLinearVelocity();
+ float targetVelocity = b2Min( velocity.x + 0.05f, 100.0f );
+
+ float velocityDifferential = targetVelocity - velocity.x;
+ float impulse = pBody->GetMass() * velocityDifferential;
+ pBody->ApplyLinearImpulse( b2Vec2(impulse, 0), pBody->GetWorldCenter(), true); 
+
+ 이 경우 작은 충격량들이 지속 적용된다. 이 뜻은 속도의 변화를 주긴 하는데 방식을 지정하는 것에서 운동량의 교환 개념으로 바꾼 것이다.
