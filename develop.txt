@@ -74,3 +74,36 @@ xpos, ypos, (grid 크기는 추후에), type (= empty, passible ground, impassib
 box2d를 공부하고.. 그려보려 했으나
 pygame의 polygon 기능, 점 4개 전부를 써서 사각형 그리는 기능이 없음
 과감하게 버리기로..
+
+
+// numpy 라이브러리 사용시, 구조체 배열이나 그리드 배열 손쉽게 만들기 가능.
+import numpy as np
+x_grid = np.linspace(1,10,10)
+X = np.meshgrid(x_grid)
+ --> 다음과 같이 grid 만들기 가능.
+X[0][1] <- 접근 가능
+// 
+
+
+// from dataclasses import dataclass // 구조체 모듈
+
+class BLOCK:
+    x: int
+    y: int
+    type: int
+
+blocks = []
+blocks.append(BLOCK())
+blocks.append(BLOCK())
+
+blocks[0].x = 1
+blocks[0].y = 1
+blocks[0].type = 1
+
+blocks[1].x = 2
+blocks[1].y = 2
+blocks[1].type = 2
+
+print(blocks[0].x, blocks[1].y)
+
+//

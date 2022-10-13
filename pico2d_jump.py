@@ -4,21 +4,8 @@ from pico2d import *
 import math
 from dataclasses import dataclass
 from mj_values import *
-
+import numpy as np
 '''  '''
-
-class BLOCK:
-    x: int = None
-    y: int = None
-    type: int = None
-
-blocks = BLOCK()
-
-blocks.type = 1
-blocks.x = 1
-blocks.y = 1
-
-
 
 def Jump():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime
@@ -125,19 +112,36 @@ y_frame = 15
 count = 0
 
 if __name__ == '__main__':
+
+    class BLOCK:
+        x: int
+        y: int
+        type: int
+
+    blocks = []
+
     file = open("grid_data.txt", "r")
         # 파일 열기. 뒤의 인자는 C와 동일
     before_strings = file.readlines()
         # 개행 문자 포함, 리스트 형식 return
-    print(before_strings)
     file.close()
     grid_data = []
 
     for i in before_strings:
         tmp_str = i.replace('\n', '')
         grid_data.append(tmp_str)
-    
-    print(grid_data)
+
+    for i in range(0, 1000000):
+        if i == 100000: 
+            print('this!')
+        blocks.append(BLOCK())
+        blocks[i].x = grid_data[i][0:4]
+        ab = grid_data[i % 1000][0:4]
+        blocks[i].y = grid_data[i][5:9]
+        blocks[i].type = grid_data[i][10]
+
+    print(blocks[500010].x, blocks[500012].y)
+
 
     while running:
         clear_canvas()
