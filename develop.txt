@@ -41,7 +41,7 @@ y = -x(x-a) 이용, 점프 구현
 
 맵 툴 필요
  -> 키보드or마우스 조작, 선택된 grid에 rectangle 그려주기.
-  -> txt 파일에 저장
+ -> txt 파일에 저장
  
 file = open("TextFile.txt", "r")
     # 파일 열기. 뒤의 인자는 C와 동일한듯
@@ -50,9 +50,22 @@ strings = file.readlines()
 print(strings)
 file.close()
 
+//
+file = open("grid_data.txt", "r")
+before_strings = file.readlines()
+print(before_strings)
+file.close()
+grid_data = []
+
+for i in before_strings:
+    tmp_str = i.replace('\n', '')
+    grid_data.append(tmp_str)
+
+// 다음과 같이 개행 문자 삭제 가능
+
 txt 파일 필요한 데이터
-xpos, ypos, (grid 크기는 추후에), type (= empty, passible ground, impassible ground, impassible ground(can climb wall), water)
-  
+xpos, ypos, (grid 크기는 추후에), type (= empty, passible ground, impassible ground, impassible ground(can climb wall), trap, water)
+
 
 
 
