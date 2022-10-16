@@ -3,10 +3,14 @@ from dataclasses import dataclass
 X_MOVE_POWER = 3
 Y_MOVE_POWER = 3
 
-BLOCK_CNT = 3
+BLOCK_CNT = 0
 
-x = 600.0
-y = 100.0
+x = 0.0
+y = 3000.0 # 시작점
+
+block_x = 0.0
+block_y = -3000.0 # 시작점의 역수로 잡아야 블럭의 위치가 잡힘
+
 diameter = 20.0
 
 now_move_player_left = False
@@ -14,8 +18,7 @@ now_move_player_right = False
 
 player_on_block_num = -1
 
-block_x = 0.0
-block_y = 0.0
+
 
 player_x = 0
 
