@@ -47,14 +47,15 @@ def Jump():
     global min_jump_height, is_falling
     global player_on_block_num
 
+    blocks_init()
+
     # space를 누르지 않으면, 종료
-    if JumpKeyPressed == 0:
+    if JumpKeyPressed == 0 and is_falling == 0:
         return
     
 
     min_jump_height = JumpHeight
     JumpHeight = (JumpTime * JumpTime - JumpPower * JumpTime) / 2.0
-    print("run jump def")
     JumpTime += 0.2
 
     # 변곡점 --> JumpHeight = -312.5
@@ -70,7 +71,7 @@ def Jump():
     ##      -> is_falling 상태일 때만 활성화하기.
     ##  3. 블럭 아래에 부딪혔을 때
 
-    print(JumpTime, JumpPower, "///",  y - JumpHeight)
+    # print(JumpTime, JumpPower, "///",  y - JumpHeight)
 
     if JumpTime > JumpPower and y - JumpHeight <= 99: # 
         JumpTime = 0
@@ -96,15 +97,18 @@ def Jump():
             y = y - JumpHeight
             block_y = block_y + JumpHeight
 
-            
             JumpHeight = 0
             JumpKeyPressed = False
-            JumpAgain = False
+           
 
             is_falling = False
             min_jump_height = 0
             player_on_block_num = i
+            
+            if JumpAgain == False:
+                collision_repair(i)
 
+            JumpAgain = False
             return
 
         temp_rect.top, temp_rect.bottom = BLOCKS[i].bottom - 8, BLOCKS[i].bottom - 8
@@ -122,6 +126,11 @@ def Jump():
 
             # 위 같이 구현하긴 힘들듯 ㅠ
             JumpTime = 50 - JumpTime
+            JumpHeight = (JumpTime * JumpTime - JumpPower * JumpTime) / 2.0
+
+            draw_rectangle(temp_rect.left, temp_rect.bottom - 1, temp_rect.right, temp_rect.top + 1)
+            update_canvas()
+            print("bottom col")
 
             is_falling = True
 
@@ -130,7 +139,7 @@ def Jump():
 def Move():
     global LeftKeyPressed, RightKeyPressed, MoveDistance, PlayerMoveDistance, MovePower, MoveTime, MoveCount, x, y
     global block_x, X_MOVE_POWER, now_move_player_left, now_move_player_right, player_x, ex_block, block_y
-    global JumpTime, JumpKeyPressed, player_on_block_num, is_falling
+    global JumpTime, JumpKeyPressed, player_on_block_num, is_falling, JumpHeight, JumpPower
     global can_climb_left, can_climb_right
     # Distance에 상한을 정하고, 최대 속력을 맞추기
 
@@ -173,6 +182,7 @@ def Move():
             PLAYER_RECT.right < BLOCKS[i].left - 5 and PLAYER_RECT.left < BLOCKS[i].right + 5:
                 # 떨어지기!
                 JumpTime = 25.2
+                JumpHeight = (JumpTime * JumpTime - JumpPower * JumpTime) / 2.0
                 JumpKeyPressed = 1
                 player_on_block_num = -1
                 is_falling = True
@@ -310,8 +320,11 @@ def handle_events():
                     JumpAgain = True
                     y = y - JumpHeight
                     block_y = block_y + JumpHeight
+                    JumpHeight = 0
                     JumpTime = 0.0
                     player_on_block_num = -1
+                    blocks_init()
+                    # 여기서 block_y값이 갑자기 확 낮아짐.
 
             elif event.key == SDLK_LEFT:
                 LeftKeyPressed = 1
@@ -323,10 +336,8 @@ def handle_events():
                 #if LeftKeyPressed == 1: 
                 LeftKeyPressed, MoveCount, MoveTime = 0, 0, 0
 
-
             elif event.key == SDLK_ESCAPE:
                 running = False
-
 
         elif event.type == SDL_KEYUP:
             if event.key == SDLK_LEFT:
@@ -336,6 +347,11 @@ def handle_events():
                 if RightKeyPressed == 1:
                     RightKeyPressed = -1
 
+running = 1
+x_frame = 0
+y_frame = 15
+count = 0
+
 def animation_count():
     global count, x_frame, y_frame
     count += 1
@@ -343,7 +359,36 @@ def animation_count():
         x_frame = (x_frame + 1) % 16
         count = 0
 
+def blocks_init():
+    global BLOCKS, block_x, block_y, MoveDistance, JumpHeight
+    global X_MOVE_POWER, Y_MOVE_POWER
 
+    BLOCKS[0].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + 400
+    BLOCKS[0].right = BLOCKS[0].left + 300
+    BLOCKS[0].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 400
+    BLOCKS[0].top = BLOCKS[0].bottom + 100
+
+    BLOCKS[1].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + 1000
+    BLOCKS[1].right = BLOCKS[1].left + 400
+    BLOCKS[1].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 600
+    BLOCKS[1].top = BLOCKS[1].bottom + 100
+
+    BLOCKS[2].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + 1200
+    BLOCKS[2].right = BLOCKS[2].left + 400
+    BLOCKS[2].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 300
+    BLOCKS[2].top = BLOCKS[2].bottom + 100
+
+def collision_repair(i):
+    global y, block_y, BLOCKS, PLAYER_RECT
+
+    blocks_init()
+    if collision_check(BLOCKS[i], PLAYER_RECT):
+        y += 5
+        block_y -= 5
+        collision_repair(i)
+        print("did")
+    else:
+        return
 
 
 open_canvas(1280, 720)
@@ -354,13 +399,10 @@ hero = load_image('resources/knight_hero.png')
 ex_map = load_image('resources/map_ex.png')
 ex_block = load_image('resources/block_ex.png')
 
-running = 1
-x_frame = 0
-y_frame = 15
-count = 0
+
 
 if __name__ == '__main__':
-
+    blocks_init()
     while running:
         clear_canvas()
         # black_rect.draw(x - MoveDistance, y - JumpHeight, 100, 100)
@@ -379,20 +421,7 @@ if __name__ == '__main__':
         # 캐릭터 크기 100이 딱 맞는듯
         hero.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
 
-        BLOCKS[0].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + 400
-        BLOCKS[0].right = BLOCKS[0].left + 300
-        BLOCKS[0].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 400
-        BLOCKS[0].top = BLOCKS[0].bottom + 100
-
-        BLOCKS[1].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + 1000
-        BLOCKS[1].right = BLOCKS[1].left + 400
-        BLOCKS[1].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 600
-        BLOCKS[1].top = BLOCKS[1].bottom + 100
-
-        BLOCKS[2].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + 1200
-        BLOCKS[2].right = BLOCKS[2].left + 400
-        BLOCKS[2].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 300
-        BLOCKS[2].top = BLOCKS[2].bottom + 100
+        
 
         PLAYER_RECT.left = 640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) - 50
         PLAYER_RECT.bottom = 200 - 50
@@ -405,18 +434,12 @@ if __name__ == '__main__':
         draw_rectangle(BLOCKS[1].left, BLOCKS[1].bottom, BLOCKS[1].right, BLOCKS[1].top)
         draw_rectangle(BLOCKS[2].left, BLOCKS[2].bottom, BLOCKS[2].right, BLOCKS[2].top)
 
-
-        if collision_check(BLOCKS[0], PLAYER_RECT):
-            print("Col!")
-
         animation_count()
         
         handle_events() 
-        
 
         Move()
         Jump()
-
         update_canvas()
         
 
