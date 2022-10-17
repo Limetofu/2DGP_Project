@@ -28,9 +28,7 @@ PLAYER_RECT = RECT()
 
 
 
-min_jump_height = 0
-is_falling = 0
-grid_data = []
+
 
 def load_block():
     global BLOCKS, BLOCK_CNT, grid_data
@@ -64,16 +62,16 @@ def blocks_init():
 
 def player_init():
     global PLAYER_RECT, PlayerMoveDistance, player_x, X_MOVE_POWER
-    PLAYER_RECT.left = 640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) - 50
+    PLAYER_RECT.left = 640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) -25
     PLAYER_RECT.bottom = 200 - 50
-    PLAYER_RECT.right = PLAYER_RECT.left + 100
+    PLAYER_RECT.right = PLAYER_RECT.left + 50
     PLAYER_RECT.top = 200 + 50
 
 def Jump():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime
     global JumpAgain
     global y, block_y
-    global min_jump_height, is_falling
+    global is_falling
     global player_on_block_num
 
     blocks_init()
@@ -82,8 +80,6 @@ def Jump():
     if JumpKeyPressed == 0 and is_falling == 0:
         return
     
-
-    min_jump_height = JumpHeight
     JumpHeight = (JumpTime * JumpTime - JumpPower * JumpTime) / 2.0
     JumpTime += 0.2
 
@@ -102,16 +98,15 @@ def Jump():
 
     # print(JumpTime, JumpPower, "///",  y - JumpHeight)
 
-    if JumpTime > JumpPower and y - JumpHeight <= 99: # 
-        JumpTime = 0
-        y = y - JumpHeight
-        block_y = block_y + JumpHeight
-        JumpHeight = 0
-        JumpKeyPressed = False
-        JumpAgain = False
+    # if JumpTime > JumpPower and y - JumpHeight <= 99: # 
+    #     JumpTime = 0
+    #     y = y - JumpHeight
+    #     block_y = block_y + JumpHeight
+    #     JumpHeight = 0
+    #     JumpKeyPressed = False
+    #     JumpAgain = False
 
-        is_falling = False
-        min_jump_height = 0
+    #     is_falling = False
     
     for i in range(BLOCK_CNT):
         # 충돌 검사. BLOCK_CNT만큼
@@ -131,7 +126,6 @@ def Jump():
            
 
             is_falling = False
-            min_jump_height = 0
             player_on_block_num = i
             
             collision_repair(i)
@@ -355,8 +349,9 @@ def handle_events():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime, player_on_block_num, is_falling
     global running
     global JumpAgain
-    global y, block_y
+    global y, block_y, show_blocks
     global LeftKeyPressed, RightKeyPressed, MoveCount, MoveTime
+    global hero_heading_right, hero_heading_left, x_frame
 
     events = get_events()
     for event in events:
@@ -380,17 +375,22 @@ def handle_events():
                     # 여기서 block_y값이 갑자기 확 낮아짐.
 
             elif event.key == SDLK_LEFT:
-                LeftKeyPressed = 1
+                LeftKeyPressed, hero_heading_left = 1, True
                 #if RightKeyPressed == 1: 
-                RightKeyPressed, MoveCount, MoveTime = 0, 0, 0
+                RightKeyPressed, MoveCount, MoveTime, hero_heading_right = 0, 0, 0, False
 
             elif event.key == SDLK_RIGHT:
-                RightKeyPressed = 1
+                RightKeyPressed, hero_heading_right = 1, True
                 #if LeftKeyPressed == 1: 
-                LeftKeyPressed, MoveCount, MoveTime = 0, 0, 0
+                LeftKeyPressed, MoveCount, MoveTime, hero_heading_left = 0, 0, 0, False
 
             elif event.key == SDLK_ESCAPE:
                 running = False
+            elif event.key == SDLK_u:
+                if show_blocks == False:
+                    show_blocks = True
+                else:
+                    show_blocks = False
 
         elif event.type == SDL_KEYUP:
             if event.key == SDLK_LEFT:
@@ -399,18 +399,6 @@ def handle_events():
             elif event.key == SDLK_RIGHT:
                 if RightKeyPressed == 1:
                     RightKeyPressed = -1
-
-running = 1
-x_frame = 0
-y_frame = 15
-count = 0
-
-def animation_count():
-    global count, x_frame, y_frame
-    count += 1
-    if count == 30:
-        x_frame = (x_frame + 1) % 16
-        count = 0
 
 def collision_repair(i):
     global y, block_y, BLOCKS, PLAYER_RECT
@@ -485,16 +473,114 @@ open_canvas(1280, 720)
 
 black_rect = load_image('resources/black_rect.png')
 white_rect = load_image('resources/white_rect.png')
-hero = load_image('resources/knight_hero.png')
+hero_right = load_image('resources/knight_hero_right.png')
+hero_left = load_image('resources/knight_hero_left.png')
 ex_map = load_image('resources/map_ex.png')
 ex_block = load_image('resources/first_map.png')
 
+running = 1
+x_frame = 0
+y_frame = 15
+count = 0
 
+def animation_count(): # 16 x 16 
+    global count, x_frame, y_frame, player_state, hero_heading_left, hero_heading_right
+    global LeftKeyPressed, RightKeyPressed, is_falling
+    count += 1
+    if count == 30:
+        if JumpKeyPressed or JumpAgain or is_falling:
+            y_frame = 6
+                        # <- 0 ~ 25 상승, 25.2 ~ 50까지 착지.
+                        # 점프 애니메이션 12개. 50까지 대충 12개로 쪼개기.
+            if hero_heading_right:
+                # for i in range(0, 48 + 1, 4): # 48
+                #     if i == 48:
+                #         x_frame = 8
+                #     elif i <= 
+                #     elif i <= JumpTime <= i + 4:
+                #         x_frame = i
+
+                if JumpTime < 4:
+                    x_frame = 0
+                elif 4 <= JumpTime < 8:
+                    x_frame = 1
+                elif 8 <= JumpTime < 12:
+                    x_frame = 2
+                elif 12 <= JumpTime < 16:
+                    x_frame = 3
+                elif 16 <= JumpTime < 20:
+                    x_frame = 4
+                elif 20 <= JumpTime < 25:
+                    x_frame = 5
+                elif 25 <= JumpTime < 30:
+                    x_frame = 6
+                elif 30 <= JumpTime < 34:
+                    x_frame = 7
+                elif 34 <= JumpTime < 38:
+                    x_frame = 11
+                elif 38 <= JumpTime < 42:
+                    x_frame = 10
+                elif 42 <= JumpTime < 46:
+                    x_frame = 9
+                elif 46 <= JumpTime:                                  
+                    x_frame = 8
+
+            elif hero_heading_left:
+                if JumpTime < 4:
+                    x_frame = 15
+                elif 4 <= JumpTime < 8:
+                    x_frame = 14
+                elif 8 <= JumpTime < 12:
+                    x_frame = 13
+                elif 12 <= JumpTime < 16:
+                    x_frame = 12
+                elif 16 <= JumpTime < 20:
+                    x_frame = 11
+                elif 20 <= JumpTime < 25:
+                    x_frame = 10
+                elif 25 <= JumpTime < 30:
+                    x_frame = 9
+                elif 30 <= JumpTime < 34:
+                    x_frame = 8
+                elif 34 <= JumpTime < 38:
+                    x_frame = 4
+                elif 38 <= JumpTime < 42:
+                    x_frame = 5
+                elif 42 <= JumpTime < 46:
+                    x_frame = 6
+                elif 46 <= JumpTime:                                  
+                    x_frame = 7
+        
+        elif hero_heading_right: # 0 1 2 3 4  5 6 7 8 
+            y_frame = 15
+            if RightKeyPressed != 0: # moving, right
+                x_frame = (x_frame + 1) % 9
+            else: # idle, right
+                x_frame = 0
+            
+        elif hero_heading_left: # 14 13 12 11 10  9 8 7 6
+                                # x_frame은 왼쪽으로 전환할 때 초기화
+            y_frame = 15
+            if LeftKeyPressed != 0: # moving, left
+                if (7 <= x_frame and x_frame <= 15) == False:
+                    x_frame = 15
+                x_frame -= 1
+                if x_frame == 6:
+                    x_frame = 15
+            else: # idle, left
+                x_frame = 15
+
+
+
+        count = 0
+
+    
 
 if __name__ == '__main__':
     load_block()
     blocks_init()
     player_init()
+    animation_count()
 
     while running:
         clear_canvas()
@@ -513,24 +599,29 @@ if __name__ == '__main__':
 
         # hero? 128x128
         # 캐릭터 크기 100이 딱 맞는듯
-        hero.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
+
+        if hero_heading_right == 1:
+            hero_right.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
+        elif hero_heading_left == 1:
+            hero_left.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
 
         
 
         
+        if show_blocks:
+            draw_rectangle(PLAYER_RECT.left, PLAYER_RECT.top, PLAYER_RECT.right, PLAYER_RECT.bottom)
+            for i in range(BLOCK_CNT):
+                draw_rectangle(BLOCKS[i].left, BLOCKS[i].bottom, BLOCKS[i].right, BLOCKS[i].top)
 
-        draw_rectangle(PLAYER_RECT.left, PLAYER_RECT.top, PLAYER_RECT.right, PLAYER_RECT.bottom)
 
-        for i in range(BLOCK_CNT):
-            draw_rectangle(BLOCKS[i].left, BLOCKS[i].bottom, BLOCKS[i].right, BLOCKS[i].top)
-
-
-        animation_count()
+        
         
         handle_events() 
 
         Move()
         Jump()
+
+        animation_count()
         update_canvas()
         
 

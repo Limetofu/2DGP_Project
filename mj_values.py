@@ -22,13 +22,15 @@ player_on_block_num = -1
 
 player_x = 0
 
-JumpTime = 0.0
+JumpTime = 26.0
 JumpHeight = 0
 JumpPower = 50.0
 
-JumpKeyPressed = 0
+JumpKeyPressed = True
+is_falling = True
+JumpAgain = True
 
-JumpAgain = 0
+grid_data = []
 
 MoveTime = 0.0
 MoveDistance = 0
@@ -40,3 +42,10 @@ MoveCount = 0
 
 can_climb_left = False
 can_climb_right = False
+
+hero_heading_right = True
+hero_heading_left = True
+
+show_blocks = False
+
+player_state = 0
