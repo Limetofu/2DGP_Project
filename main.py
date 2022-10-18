@@ -491,7 +491,8 @@ def animation_count(): # 16 x 16
         if JumpKeyPressed or JumpAgain or is_falling:
             y_frame = 6
                         # <- 0 ~ 25 상승, 25.2 ~ 50까지 착지.
-                        # 점프 애니메이션 12개. 50까지 대충 12개로 쪼개기.
+                        # 점프 애니메이션 12개. 50까지 12개로 쪼개기.
+                        
             if hero_heading_right:
                 # for i in range(0, 48 + 1, 4): # 48
                 #     if i == 48:
@@ -499,6 +500,10 @@ def animation_count(): # 16 x 16
                 #     elif i <= 
                 #     elif i <= JumpTime <= i + 4:
                 #         x_frame = i
+
+
+                ##  자연스럽게 나누기 위해 임시로 반복문 없이
+                ##  추후에 반복문 넣을 예정
 
                 if JumpTime < 4:
                     x_frame = 0
@@ -588,8 +593,6 @@ if __name__ == '__main__':
         player_init()
 
         # draw(Xpos for start, Ypos for start, WIDTH /none, HEIGHT /none)
-        
-
         ex_block.clip_draw(int(x - MoveDistance) // X_MOVE_POWER, int(y - JumpHeight) // Y_MOVE_POWER, 640, 360, 640, 360, 1280, 720)
 
         # block draw 할때 y는 x처럼 Move에서 최신화가 되지 않기 때문에 더해주어야 함.
