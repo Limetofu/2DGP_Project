@@ -30,6 +30,10 @@ JumpKeyPressed = True
 is_falling = True
 JumpAgain = True
 
+remainJumpCount = 0
+
+
+
 grid_data = []
 
 MoveTime = 0.0

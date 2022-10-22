@@ -160,6 +160,13 @@ def Jump():
             # 변곡점이 매번 달라지는 점프?
             # 노가다로 최저점, 최고점 점프 세분화해서 만들면 가능.
 
+            # 남은 JumpTime 증가 갯수만큼 remainJumpCount 저장
+            # 해당 위치에 JumpHeight 고정, remainJumpCount--;
+            # remainJumpCount 모두 감소되면, 다시 떨어지게 만들어줌.
+            #   -> 여기서 JumpTime = 50 - JumpTime!
+            # remainJumpCount 조건문에 추가, 충돌이 유지돼서 무한 반복하는걸 막아줘야 함.
+            # bool 변수 하나 더 추가?  
+            
 
             print("Before:", JumpTime)
             if JumpAgain:
@@ -598,7 +605,7 @@ if __name__ == '__main__':
         # block draw 할때 y는 x처럼 Move에서 최신화가 되지 않기 때문에 더해주어야 함.
         white_rect.draw(int(block_x - MoveDistance) // (X_MOVE_POWER / 2), int(block_y + JumpHeight) // (Y_MOVE_POWER / 2))
 
-        print(int(block_x - MoveDistance) // (X_MOVE_POWER / 2), int(block_y + JumpHeight) // (Y_MOVE_POWER / 2))
+        # print(int(block_x - MoveDistance) // (X_MOVE_POWER / 2), int(block_y + JumpHeight) // (Y_MOVE_POWER / 2))
 
         # hero? 128x128
         # 캐릭터 크기 100이 딱 맞는듯
