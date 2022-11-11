@@ -5,7 +5,11 @@ from dataclasses import dataclass
 from mj_values import *
 import numpy as np
 from check_col import collision_check
+from time import time
+
 '''  '''
+
+open_canvas(1280, 720, sync=False)
 
 class RECT:
     left: int
@@ -20,13 +24,34 @@ class BLOCK:
     top: int
     type: int
 
+class MONSTER:
+    left: int
+    bottom: int
+    right: int
+    top: int
+    type: str
+    state: str
+        # idle / alert / attacking / hit by player / dying / dead
+
+
 
 # BLOCK 구조체 배열(리스트) 만들 예정. 
 BLOCKS = []
 
 PLAYER_RECT = RECT()
 
+first = MONSTER()
 
+# def move_all(xdir, ydir):
+#     global x, y
+#     # xdir, ydir만큼 전부 옮기기.
+#     #  --> 화면 흔들리는 이펙트
+#     # BLOCKS는 옮길 필요가 없지 않은지?
+   
+#     x += xdir
+#     y += ydir    
+    
+#     pass
 
 
 
@@ -67,6 +92,9 @@ def player_init():
     PLAYER_RECT.right = PLAYER_RECT.left + 50
     PLAYER_RECT.top = 200 + 50
 
+# player JUMP
+# 
+
 def Jump():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime
     global JumpAgain
@@ -79,7 +107,7 @@ def Jump():
     # space를 누르지 않으면, 종료
     if JumpKeyPressed == 0 and is_falling == 0:
         return
-    
+
     JumpHeight = (JumpTime * JumpTime - JumpPower * JumpTime) / 2.0
     JumpTime += 0.2
 
@@ -180,7 +208,7 @@ def Jump():
 
             JumpHeight = (JumpTime * JumpTime - JumpPower * JumpTime) / 2.0
 
-            draw_rectangle(temp_rect.left, temp_rect.bottom - 1, temp_rect.right, temp_rect.top + 1)
+            # draw_rectangle(temp_rect.left, temp_rect.bottom - 1, temp_rect.right, temp_rect.top + 1)
             update_canvas()
             print("bottom col")
 
@@ -194,6 +222,11 @@ def Move():
     global JumpTime, JumpKeyPressed, player_on_block_num, is_falling, JumpHeight, JumpPower
     global can_climb_left, can_climb_right
     # Distance에 상한을 정하고, 최대 속력을 맞추기
+
+    MoveValue = 600.0
+    MoveCountLimit = 100
+    MoveTimeChange = 0.1
+
 
     # 둘 다 누른 상태가 아니거나, 둘 다 눌렀다가 뗸 상태도 아니면, 바로 종료하기
     if LeftKeyPressed == 0 and RightKeyPressed == 0 and MoveCount == 0:
@@ -247,71 +280,71 @@ def Move():
 
     if now_move_player_left:
         # 플레이어를 움직일 차례. -> 맵 끝으로 갔기 때문
-        PlayerMoveDistance = (MoveTime * MoveTime - MovePower * MoveTime) / 600.0
+        PlayerMoveDistance = (MoveTime * MoveTime - MovePower * MoveTime) / MoveValue
         if LeftKeyPressed == 1:
             if player_x - PlayerMoveDistance < 920:
-                player_x = player_x - PlayerMoveDistance
+                player_x -= PlayerMoveDistance
         if RightKeyPressed == 1:
-            player_x = player_x + PlayerMoveDistance
+            player_x += PlayerMoveDistance
 
         
             # 맵 끝으로 갔을 때, 못움직이게
 
         # 관성 -> Movecount
         if LeftKeyPressed == 1 or RightKeyPressed == 1:
-            if MoveCount < 100:
-                MoveTime += 0.1
+            if MoveCount < MoveCountLimit:
+                MoveTime += MoveTimeChange
                 MoveCount += 1
 
         # 키를 뗐을 때, MoveCount만큼 관성 이동
         else:
             if MoveCount > 0:
-                MoveTime -= 0.1
+                MoveTime -= MoveTimeChange
                 MoveCount -= 1
                 if LeftKeyPressed == -1:
                     if player_x - PlayerMoveDistance < 920:
-                        player_x = player_x - PlayerMoveDistance
+                        player_x -= PlayerMoveDistance
                 elif RightKeyPressed == -1:
-                    player_x = player_x + PlayerMoveDistance
+                    player_x += PlayerMoveDistance
 
         if int(player_x - PlayerMoveDistance) < 0:
             now_move_player_left = False
 
     elif now_move_player_right:
         # 플레이어를 움직일 차례. -> 맵 끝으로 갔기 때문
-        PlayerMoveDistance = (MoveTime * MoveTime - MovePower * MoveTime) / 600.0
+        PlayerMoveDistance = (MoveTime * MoveTime - MovePower * MoveTime) / MoveValue
         if LeftKeyPressed == 1:
-            player_x = player_x - PlayerMoveDistance
+            player_x -= PlayerMoveDistance
         if RightKeyPressed == 1:
             if player_x + PlayerMoveDistance > -920:
-                player_x = player_x + PlayerMoveDistance
+                player_x += PlayerMoveDistance
 
         
             # 맵 끝으로 갔을 때, 못움직이게
 
         # 관성 -> Movecount
         if LeftKeyPressed == 1 or RightKeyPressed == 1:
-            if MoveCount < 100:
-                MoveTime += 0.1
+            if MoveCount < MoveCountLimit:
+                MoveTime += MoveTimeChange
                 MoveCount += 1
 
         # 키를 뗐을 때, MoveCount만큼 관성 이동
         else:
             if MoveCount > 0:
-                MoveTime -= 0.1
+                MoveTime -= MoveTimeChange
                 MoveCount -= 1
                 if LeftKeyPressed == -1:
-                    player_x = player_x - PlayerMoveDistance
+                    player_x -= PlayerMoveDistance
                 elif RightKeyPressed == -1:
                     if player_x + PlayerMoveDistance > -920:
-                        player_x = player_x + PlayerMoveDistance
+                        player_x += PlayerMoveDistance
 
         if int(player_x - PlayerMoveDistance) > 4:
             now_move_player_right = False
 
     else:
 
-        MoveDistance = (MoveTime * MoveTime - MovePower * MoveTime) / 600.0
+        MoveDistance = (MoveTime * MoveTime - MovePower * MoveTime) / MoveValue
 
         if (int(x - MoveDistance) // X_MOVE_POWER) <= 5:
         # 맵 왼쪽 끝으로 갔다면?
@@ -333,13 +366,13 @@ def Move():
         # 관성 -> Movecount
         if LeftKeyPressed == 1 or RightKeyPressed == 1:
             if MoveCount < 100:
-                MoveTime += 0.1
+                MoveTime += MoveTimeChange
                 MoveCount += 1
 
         # 키를 뗐을 때, MoveCount만큼 관성 이동
         else:
             if MoveCount > 0:
-                MoveTime -= 0.1
+                MoveTime -= MoveTimeChange
                 MoveCount -= 1
                 if LeftKeyPressed == -1:
                     x = x + MoveDistance
@@ -352,6 +385,81 @@ def Move():
         LeftKeyPressed = 0
         RightKeyPressed = 0
 
+def Attack():
+    # 플레이어가 공격
+    #  handle_events에 player_state 바꾸기
+    #  player_state == attack이면, 
+    #  해당 
+
+    global count # idle anime count
+    global player_state
+    global DownKeyPressed, UpKeyPressed, hero_heading_left, hero_heading_right
+    global attack_anime_count, attack_dir, attack_anime_frame, x_frame
+
+    if player_state != 1:
+        return
+
+    #   ---  경우  ---
+
+    # 1. 아무 버튼도 누르지 않음
+    #    => 플레이어가 향하는 방향에 베기
+    # 2. 좌우 방향키
+    #    => 누른 방향키 따라 베기
+    #       근데? heading값만 따라가도 판단 가능.
+    # 3. 위아래 방향키
+    #    => 누른 방향키 따라 베기.
+    #       최우선으로 적용해야 함
+
+    # attack 애니메이션 count는 여기 함수에서 관리
+    # animation_count 함수에서는 출력만 해주고
+    # 여기서 count에 따라 player_state 바꿔주기 등 연산
+
+    # 좌우를 나눌 필요가 있을까?
+    # attack_anime_count만 바꿀것.
+    
+    # attack_dir == 0? -> 공격중이 아님!
+    # attack_dir != 0  -> 공격중
+
+    if attack_dir == 0:
+        attack_anime_count = 0 # count 초기화. 새 공격이기 때문
+        if DownKeyPressed:
+            attack_dir = -2
+            x_frame = 7
+        elif UpKeyPressed:
+            if hero_heading_left:
+                attack_dir = 3
+                x_frame = 15
+            else:
+                attack_dir = 2
+                x_frame = 0
+        elif hero_heading_left:
+            attack_dir = -1
+            x_frame = 15
+        else:
+            attack_dir = 1
+            x_frame = 0
+    
+    else: # 0이 아님! -> 공격중. count 올려주자
+        if attack_anime_count > attack_anime_frame:
+            # attack anime이 끝. 초기화 시켜주기.
+            attack_anime_count = 0
+            attack_dir = 0
+            count = 0
+            player_state = 0 # idle 상태로
+
+        else:
+            attack_anime_count += 1
+
+# what monster need?
+#   1. position
+#   2. type <-- type에 따라서 Monster에서 
+#   3. state <-- str
+
+def Monster():
+    pass
+
+
+
 def handle_events():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime, player_on_block_num, is_falling
     global running
@@ -359,6 +467,7 @@ def handle_events():
     global y, block_y, show_blocks
     global LeftKeyPressed, RightKeyPressed, MoveCount, MoveTime
     global hero_heading_right, hero_heading_left, x_frame
+    global UpKeyPressed, DownKeyPressed, player_state
 
     events = get_events()
     for event in events:
@@ -379,18 +488,27 @@ def handle_events():
                     JumpTime = 0.0
                     player_on_block_num = -1
                     blocks_init()
-                    # 여기서 block_y값이 갑자기 확 낮아짐.
 
             elif event.key == SDLK_LEFT:
                 LeftKeyPressed, hero_heading_left = 1, True
                 #if RightKeyPressed == 1: 
                 RightKeyPressed, MoveCount, MoveTime, hero_heading_right = 0, 0, 0, False
+                if player_state == 0: x_frame = 15
 
             elif event.key == SDLK_RIGHT:
                 RightKeyPressed, hero_heading_right = 1, True
                 #if LeftKeyPressed == 1: 
                 LeftKeyPressed, MoveCount, MoveTime, hero_heading_left = 0, 0, 0, False
+                if player_state == 0: x_frame = 0
 
+            elif event.key == SDLK_UP:
+                UpKeyPressed, DownKeyPressed = True, False
+
+            elif event.key == SDLK_DOWN:
+                DownKeyPressed, UpKeyPressed = True, False
+            elif event.key == SDLK_z:
+                if player_state == 0:
+                    player_state = 1
             elif event.key == SDLK_ESCAPE:
                 running = False
             elif event.key == SDLK_u:
@@ -399,13 +517,29 @@ def handle_events():
                 else:
                     show_blocks = False
 
+            # elif event.key == SDLK_j:
+            #     move_all(10, 10)
+            # elif event.key == SDLK_l:
+            #     move_all(-10, -10)
+
         elif event.type == SDL_KEYUP:
             if event.key == SDLK_LEFT:
                 if LeftKeyPressed == 1:
                     LeftKeyPressed = -1
+
             elif event.key == SDLK_RIGHT:
                 if RightKeyPressed == 1:
                     RightKeyPressed = -1
+
+            elif event.key == SDLK_DOWN:
+                DownKeyPressed = False
+            elif event.key == SDLK_UP:
+                UpKeyPressed = False
+
+        # elif event.type == SDL_MOUSEBUTTONDOWN:
+        #     if event.button == SDL_BUTTON_LEFT:
+                
+        
 
 def collision_repair(i):
     global y, block_y, BLOCKS, PLAYER_RECT
@@ -476,7 +610,7 @@ def collision_repair_right(i):
     else:
         return
 
-open_canvas(1280, 720)
+
 
 black_rect = load_image('resources/black_rect.png')
 white_rect = load_image('resources/white_rect.png')
@@ -485,75 +619,70 @@ hero_left = load_image('resources/knight_hero_left.png')
 ex_map = load_image('resources/map_ex.png')
 ex_block = load_image('resources/first_map.png')
 
+
+
 running = 1
 x_frame = 0
 y_frame = 15
 count = 0
 
-def animation_count(): # 16 x 16 
+def animation_count(): # 16 x 16
     global count, x_frame, y_frame, player_state, hero_heading_left, hero_heading_right
     global LeftKeyPressed, RightKeyPressed, is_falling
+    global attack_anime_count, attack_dir
+
     count += 1
-    if count == 30:
+
+    if player_state == 1:
+        if attack_dir == -1: # 유일한 left
+            y_frame = 12
+            if attack_anime_count % 15 == 0:
+                x_frame -= 1
+        elif attack_dir == 3:
+            y_frame = 7
+            if attack_anime_count % 15 == 0:
+                x_frame -= 1
+
+        elif attack_dir == 1:
+            y_frame = 12
+            if attack_anime_count % 15 == 0:
+                x_frame += 1
+        elif attack_dir == -2 or attack_dir == 2:
+            y_frame = 7
+            if attack_anime_count % 15 == 0:
+                x_frame += 1
+            
+
+    elif count == 30:
         if JumpKeyPressed or JumpAgain or is_falling:
             y_frame = 6
                         # <- 0 ~ 25 상승, 25.2 ~ 50까지 착지.
                         # 점프 애니메이션 12개. 50까지 12개로 쪼개기.
                         
             if hero_heading_right:
-                # for i in range(0, 48 + 1, 4): # 48
-                #     if i == 48:
-                #         x_frame = 8
-                #     elif i <= 
-                #     elif i <= JumpTime <= i + 4:
-                #         x_frame = i
 
-
-                ##  자연스럽게 나누기 위해 임시로 반복문 없이
-                ##  추후에 반복문 넣을 예정
-
-                if JumpTime < 4:
-                    x_frame = 0
-                elif 4 <= JumpTime < 8:
-                    x_frame = 1
-                elif 8 <= JumpTime < 12:
-                    x_frame = 2
-                elif 12 <= JumpTime < 16:
-                    x_frame = 3
-                elif 16 <= JumpTime < 20:
-                    x_frame = 4
-                elif 20 <= JumpTime < 25:
-                    x_frame = 5
-                elif 25 <= JumpTime < 30:
-                    x_frame = 6
-                elif 30 <= JumpTime < 34:
-                    x_frame = 7
+                if JumpTime < 34:
+                    for i in range(0, 34, 4):
+                        if i <= JumpTime <= i + 4:
+                            x_frame = i // 4
+                            break
                 elif 34 <= JumpTime < 38:
                     x_frame = 11
                 elif 38 <= JumpTime < 42:
                     x_frame = 10
                 elif 42 <= JumpTime < 46:
                     x_frame = 9
-                elif 46 <= JumpTime:                                  
+                elif 46 <= JumpTime:
                     x_frame = 8
 
             elif hero_heading_left:
-                if JumpTime < 4:
-                    x_frame = 15
-                elif 4 <= JumpTime < 8:
-                    x_frame = 14
-                elif 8 <= JumpTime < 12:
-                    x_frame = 13
-                elif 12 <= JumpTime < 16:
-                    x_frame = 12
-                elif 16 <= JumpTime < 20:
-                    x_frame = 11
-                elif 20 <= JumpTime < 25:
-                    x_frame = 10
-                elif 25 <= JumpTime < 30:
-                    x_frame = 9
-                elif 30 <= JumpTime < 34:
-                    x_frame = 8
+                if JumpTime < 34:
+                    for i in range(0, 34, 4):
+                        if i <= JumpTime <= i + 4:
+                            x_frame = 15 - (i // 4)
+                            break
+                            # 0 1 2 3 4 5 6 7
+                            # 15 14 13 12 11 10 9 8
                 elif 34 <= JumpTime < 38:
                     x_frame = 4
                 elif 38 <= JumpTime < 42:
@@ -563,57 +692,73 @@ def animation_count(): # 16 x 16
                 elif 46 <= JumpTime:                                  
                     x_frame = 7
         
-        elif hero_heading_right: # 0 1 2 3 4  5 6 7 8 
+        elif hero_heading_right: # 0 1 2 3 4 5 6 7 8
             y_frame = 15
             if RightKeyPressed != 0: # moving, right
                 x_frame = (x_frame + 1) % 9
             else: # idle, right
                 x_frame = 0
             
-        elif hero_heading_left: # 14 13 12 11 10  9 8 7 6
+        elif hero_heading_left: # 14 13 12 11 10 9 8 7 6
                                 # x_frame은 왼쪽으로 전환할 때 초기화
             y_frame = 15
             if LeftKeyPressed != 0: # moving, left
+                x_frame -= 1
                 if (7 <= x_frame and x_frame <= 15) == False:
                     x_frame = 15
-                x_frame -= 1
                 if x_frame == 6:
                     x_frame = 15
             else: # idle, left
                 x_frame = 15
 
-
-
         count = 0
 
-    
 
 if __name__ == '__main__':
+
     load_block()
     blocks_init()
     player_init()
     animation_count()
+    
 
     while running:
         clear_canvas()
         blocks_init()
         player_init()
 
+        pico2d.opacify(ex_block, 255)
+        
         # draw(Xpos for start, Ypos for start, WIDTH /none, HEIGHT /none)
         ex_block.clip_draw(int(x - MoveDistance) // X_MOVE_POWER, int(y - JumpHeight) // Y_MOVE_POWER, 640, 360, 640, 360, 1280, 720)
 
         # block draw 할때 y는 x처럼 Move에서 최신화가 되지 않기 때문에 더해주어야 함.
-        white_rect.draw(int(block_x - MoveDistance) // (X_MOVE_POWER / 2), int(block_y + JumpHeight) // (Y_MOVE_POWER / 2))
+        # white_rect.draw(int(block_x - MoveDistance) // (X_MOVE_POWER / 2), int(block_y + JumpHeight) // (Y_MOVE_POWER / 2))
 
         # print(int(block_x - MoveDistance) // (X_MOVE_POWER / 2), int(block_y + JumpHeight) // (Y_MOVE_POWER / 2))
 
         # hero? 128x128
         # 캐릭터 크기 100이 딱 맞는듯
 
-        if hero_heading_right == 1:
-            hero_right.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
-        elif hero_heading_left == 1:
-            hero_left.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
+        if player_state == 1:
+            if attack_dir == 2 or attack_dir == -2 or attack_dir == 1: # up
+                hero_right.clip_draw(128 * x_frame, 128 * y_frame, 128, 128,   # right로 통일.
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
+            elif attack_dir == -1 or attack_dir == 3:
+                hero_left.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
+
+
+        elif player_state == 0: # idle 상태라면, 
+            if hero_heading_right == 1:
+                hero_right.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
+            elif hero_heading_left == 1:
+                hero_left.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
+
+        hero_right.clip_draw(128 * 13, 128 * 3, 128, 128,
+                             500, 300, 100, 100)        
 
         
 
@@ -622,17 +767,15 @@ if __name__ == '__main__':
             draw_rectangle(PLAYER_RECT.left, PLAYER_RECT.top, PLAYER_RECT.right, PLAYER_RECT.bottom)
             for i in range(BLOCK_CNT):
                 draw_rectangle(BLOCKS[i].left, BLOCKS[i].bottom, BLOCKS[i].right, BLOCKS[i].top)
-
-
         
         
         handle_events() 
 
         Move()
         Jump()
+        Attack()
 
         animation_count()
         update_canvas()
-        
 
 close_canvas()

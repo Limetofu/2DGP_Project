@@ -22,9 +22,10 @@ player_on_block_num = -1
 
 player_x = 0
 
-JumpTime = 26.0
+
 JumpHeight = 0
 JumpPower = 50.0
+JumpTime = JumpPower // 2 + 1.0
 
 JumpKeyPressed = True
 is_falling = True
@@ -42,6 +43,7 @@ PlayerMoveDistance = 0
 MovePower = 200.0
 LeftKeyPressed = 0
 RightKeyPressed = 0
+UpKeyPressed, DownKeyPressed = 0, 0
 MoveCount = 0
 
 can_climb_left = False
@@ -52,4 +54,15 @@ hero_heading_left = True
 
 show_blocks = False
 
-player_state = 0
+player_state = 0 
+# 0 : idle, jump, move
+# 1 : attack
+# 2 : dying
+# 3 : dead
+
+attack_anime_count = 0
+attack_anime_frame = 80
+attack_dir = 0
+
+
+StageNum = 1
