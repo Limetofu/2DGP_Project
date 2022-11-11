@@ -25,14 +25,27 @@ class BLOCK:
     type: int
 
 class MONSTER:
+    x: int
+    y: int
+
+    hp: int
+
     left: int
     bottom: int
-    right: int
-    top: int
+    width: int
+    height: int
     type: str
     state: str
+    count: int
+    xframe: int
+    dir: int
         # idle / alert / attacking / hit by player / dying / dead
 
+class DIRT:
+    x: int
+    y: int
+    show: bool
+    count: int
 
 
 # BLOCK 구조체 배열(리스트) 만들 예정. 
@@ -40,7 +53,30 @@ BLOCKS = []
 
 PLAYER_RECT = RECT()
 
-first = MONSTER()
+DIRT_EFFECT = []
+
+for i in range(0, 10):
+    DIRT_EFFECT.append(DIRT())
+    DIRT_EFFECT[i].x = 0
+    DIRT_EFFECT[i].y = 0
+    DIRT_EFFECT[i].show = 0
+    DIRT_EFFECT[i].count = 0
+
+MONSTERS = []
+MONSTERS.append(MONSTER())
+MONSTERS[0].x = 2000
+MONSTERS[0].y = 800
+MONSTERS[0].type = 'fly'
+MONSTERS[0].state = 'idle'
+MONSTERS[0].width = 150
+MONSTERS[0].height = 150
+MONSTERS[0].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + 3385
+MONSTERS[0].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 2500
+MONSTERS[0].count = 0
+MONSTERS[0].x_frame = 0
+MONSTERS[0].dir = -1
+MONSTERS[0].hp = 5
+
 
 # def move_all(xdir, ydir):
 #     global x, y
@@ -91,6 +127,16 @@ def player_init():
     PLAYER_RECT.bottom = 200 - 50
     PLAYER_RECT.right = PLAYER_RECT.left + 50
     PLAYER_RECT.top = 200 + 50
+
+def monster_init():
+    global MONSTERS, block_x, block_y, MoveDistance, JumpHeight
+    global X_MOVE_POWER, Y_MOVE_POWER
+
+    for m in MONSTERS:
+        m.left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + m.x
+        m.bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + m.y
+
+
 
 # player JUMP
 # 
@@ -221,6 +267,7 @@ def Move():
     global block_x, X_MOVE_POWER, now_move_player_left, now_move_player_right, player_x, ex_block, block_y
     global JumpTime, JumpKeyPressed, player_on_block_num, is_falling, JumpHeight, JumpPower
     global can_climb_left, can_climb_right
+    global entire_move_count
     # Distance에 상한을 정하고, 최대 속력을 맞추기
 
     MoveValue = 600.0
@@ -231,6 +278,9 @@ def Move():
     # 둘 다 누른 상태가 아니거나, 둘 다 눌렀다가 뗸 상태도 아니면, 바로 종료하기
     if LeftKeyPressed == 0 and RightKeyPressed == 0 and MoveCount == 0:
         return
+
+
+    entire_move_count += 1
 
     # 충돌체크
     for i in range(BLOCK_CNT):
@@ -382,6 +432,7 @@ def Move():
                     block_x = block_x + MoveDistance
 
     if MoveCount == 0:
+        entire_move_count = 0
         LeftKeyPressed = 0
         RightKeyPressed = 0
 
@@ -425,6 +476,13 @@ def Attack():
         if DownKeyPressed:
             attack_dir = -2
             x_frame = 7
+            for m in MONSTERS:
+                if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn') and \
+                    PLAYER_RECT.left - 50 < m.left + 75 < PLAYER_RECT.left + 50 and \
+                    PLAYER_RECT.bottom - 400 < m.bottom < PLAYER_RECT.bottom + 20:
+                    m.state = 'hit'
+                    m.hp -= 1
+
         elif UpKeyPressed:
             if hero_heading_left:
                 attack_dir = 3
@@ -432,12 +490,33 @@ def Attack():
             else:
                 attack_dir = 2
                 x_frame = 0
+            for m in MONSTERS:
+                if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn') and \
+                    PLAYER_RECT.left - 50 < m.left + 75 < PLAYER_RECT.left + 50 and \
+                    PLAYER_RECT.bottom + 20 < m.bottom < PLAYER_RECT.bottom + 400:
+                    m.state = 'hit'
+                    m.hp -= 1
+            
+
         elif hero_heading_left:
             attack_dir = -1
             x_frame = 15
+            for m in MONSTERS:
+                if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn') and \
+                    PLAYER_RECT.left - 150 < m.left + 150 < PLAYER_RECT.left and \
+                    PLAYER_RECT.bottom - 50 < m.bottom < PLAYER_RECT.bottom + 200:
+                    m.state = 'hit'
+                    m.hp -= 1
+        
         else:
             attack_dir = 1
             x_frame = 0
+            for m in MONSTERS:
+                if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn') and \
+                    PLAYER_RECT.right < m.left < PLAYER_RECT.right + 150 and \
+                    PLAYER_RECT.bottom - 50 < m.bottom < PLAYER_RECT.bottom + 200:
+                    m.state = 'hit'
+                    m.hp -= 1
     
     else: # 0이 아님! -> 공격중. count 올려주자
         if attack_anime_count > attack_anime_frame:
@@ -455,9 +534,159 @@ def Attack():
 #   2. type <-- type에 따라서 Monster에서 
 #   3. state <-- str
 
-def Monster():
-    pass
+def Fly():
+    global MONSTERS
 
+    dataclass_num = -1
+
+    # 1. idle
+    #   기본 위치에서 좌우로 이동
+    #   끝에 가면 잠시 멈추고, 방향 바꾸고 turn 상태 출력 후  
+    #   반대 방향으로 바꾸기. (count 초기화)
+    for m in MONSTERS:
+        dataclass_num += 1
+        if m.type == 'fly': # fly가 맞다면
+            if m.state == 'idle':
+                change_state_alert(dataclass_num)
+                if m.count <= 2000:
+                    if m.dir == -1:
+                        m.x -= 0.5
+                    elif m.dir == 1:
+                        m.x += 0.5
+                else: # change
+                    if m.count > 2400:
+                        m.state = 'turn'
+                        m.count = 0
+                        m.x_frame = 0
+                        m.dir *= -1
+
+            elif m.state == 'turn':
+                change_state_alert(dataclass_num)
+                if m.count >= 60:
+                    m.state = 'idle'
+                    m.count = 0
+                    m.x_frame = 0
+
+
+
+            elif m.state == 'alert': # chase anime
+            
+                if m.dir == -1: # 왼쪽 바라볼 때
+                    if m.count > 250:
+                        m.x -= 1
+                        if m.bottom - 10 > PLAYER_RECT.top:
+                            m.y -= 0.25
+                        elif m.bottom + m.height + 10 < PLAYER_RECT.bottom:
+                            m.y += 0.25
+
+                    if PLAYER_RECT.left > m.left:
+                        m.count = 0
+                        m.x_frame = 0
+                        m.state = 'alert_turn'
+                        m.dir *= -1
+                elif m.dir == 1:
+                    if m.count > 250:
+                        m.x += 1
+                        if m.bottom - 10 > PLAYER_RECT.top:
+                            m.y -= 0.25
+                        elif m.bottom + m.height + 10 < PLAYER_RECT.bottom:
+                            m.y += 0.25
+
+                    if PLAYER_RECT.right < m.left + m.width:
+                        m.count = 0
+                        m.x_frame = 0
+                        m.state = 'alert_turn'
+                        m.dir *= -1
+                
+            elif m.state == 'alert_turn':
+                if m.count >= 60:
+                    m.state = 'alert'
+                    m.count = 0
+                    m.x_frame = 0
+            
+            elif m.state == 'hit':
+                if m.hp <= 0: 
+                    m.count = 0
+                    m.x_frame = 0
+                    m.state = 'dying'
+
+                if m.count >= 60:
+                    m.state = 'alert'
+                    m.count = 150
+                    m.x_frame = 0
+
+            elif m.state == 'dying':
+                if m.count >= 60:
+                    m.state = 'dead'
+
+            elif m.state == 'dead':
+                pass
+
+            m.count += 1
+
+    #   플레이어 위치와 가까워지면, 
+    monster_animation()
+    
+def change_state_alert(i):
+    global MONSTERS, PLAYER_RECT
+
+    if MONSTERS[i].dir == -1: # 왼쪽 보고있음
+        if MONSTERS[i].left + MONSTERS[i].width - 400 < PLAYER_RECT.left < MONSTERS[i].left + MONSTERS[i].width - 10 and \
+        MONSTERS[i].bottom - 150 < PLAYER_RECT.bottom + (PLAYER_RECT.top // 2) < MONSTERS[i].bottom + 150:
+            MONSTERS[i].state = 'alert'
+            MONSTERS[i].x_frame = 0
+            MONSTERS[i].count = 0
+
+    elif MONSTERS[i].dir == 1: # 오른쪽
+        if MONSTERS[i].left + MONSTERS[i].width + 10 < PLAYER_RECT.left < MONSTERS[i].left + MONSTERS[i].width + 400 and \
+        MONSTERS[i].bottom - 150 < PLAYER_RECT.bottom + (PLAYER_RECT.top // 2) < MONSTERS[i].bottom + 150:
+            MONSTERS[i].state = 'alert'
+            MONSTERS[i].x_frame = 0
+            MONSTERS[i].count = 0
+
+
+
+def monster_animation():
+    global MONSTERS
+
+    for m in MONSTERS:
+        if m.type == 'fly':
+            if m.count % 30 == 29:
+                if m.state == 'idle':
+                    m.x_frame = (m.x_frame + 1) % 5
+                elif m.state == 'turn' or m.state == 'alert_turn':
+                    m.x_frame = (m.x_frame + 1) % 2
+                elif m.state == 'alert' or m.state == 'hit':
+                    m.x_frame = (m.x_frame + 1) % 4
+                elif m.state == 'dying':
+                    m.x_frame = (m.x_frame + 1) % 3
+
+    monster_init()
+
+# def Dirt():
+#     global DIRT_EFFECT, entire_move_count
+
+#     for d in DIRT_EFFECT:
+#         if d.show == True:
+#             if d.count <= 150:
+#                 d.show = False
+#                 d.x = 0
+#                 d.y = 0
+#                 d.count = 0
+#             else:
+#                 d.count += 1
+
+#     if entire_move_count // 90 == 0:
+#         for d in DIRT_EFFECT:
+#             if d.show == False:
+
+
+
+# def dirt_animation():
+#     global DIRT_EFFECT
+
+#     for d in DIRT_EFFECT:
+#         pass
 
 
 def handle_events():
@@ -610,22 +839,6 @@ def collision_repair_right(i):
     else:
         return
 
-
-
-black_rect = load_image('resources/black_rect.png')
-white_rect = load_image('resources/white_rect.png')
-hero_right = load_image('resources/knight_hero_right.png')
-hero_left = load_image('resources/knight_hero_left.png')
-ex_map = load_image('resources/map_ex.png')
-ex_block = load_image('resources/first_map.png')
-
-
-
-running = 1
-x_frame = 0
-y_frame = 15
-count = 0
-
 def animation_count(): # 16 x 16
     global count, x_frame, y_frame, player_state, hero_heading_left, hero_heading_right
     global LeftKeyPressed, RightKeyPressed, is_falling
@@ -636,20 +849,20 @@ def animation_count(): # 16 x 16
     if player_state == 1:
         if attack_dir == -1: # 유일한 left
             y_frame = 12
-            if attack_anime_count % 15 == 0:
+            if attack_anime_count % 10 == 0:
                 x_frame -= 1
         elif attack_dir == 3:
             y_frame = 7
-            if attack_anime_count % 15 == 0:
+            if attack_anime_count % 10 == 0:
                 x_frame -= 1
 
         elif attack_dir == 1:
             y_frame = 12
-            if attack_anime_count % 15 == 0:
+            if attack_anime_count % 10 == 0:
                 x_frame += 1
         elif attack_dir == -2 or attack_dir == 2:
             y_frame = 7
-            if attack_anime_count % 15 == 0:
+            if attack_anime_count % 10 == 0:
                 x_frame += 1
             
 
@@ -714,11 +927,37 @@ def animation_count(): # 16 x 16
         count = 0
 
 
+black_rect = load_image('resources/black_rect.png')
+white_rect = load_image('resources/white_rect.png')
+hero_right = load_image('resources/knight_hero_right.png')
+hero_left = load_image('resources/knight_hero_left.png')
+ex_map = load_image('resources/map_ex.png')
+ex_block = load_image('resources/first_map.png')
+
+fly_idle = load_image('resources/monsters/fly_idle.png')
+fly_shock = load_image('resources/monsters/fly_shock.png')
+fly_chase = load_image('resources/monsters/fly_chase.png')
+fly_die = load_image('resources/monsters/fly_die.png')
+fly_turn_left = load_image('resources/monsters/fly_turn_left.png')
+
+hp_o = load_image('resources/hp_o.png')
+hp_x = load_image('resources/hp_x.png')
+
+# dirt_image = load_image('resources/monsters/dirt.png')
+
+running = 1
+x_frame = 0
+y_frame = 15
+count = 0
+
+
+
 if __name__ == '__main__':
 
     load_block()
     blocks_init()
     player_init()
+    Fly()
     animation_count()
     
 
@@ -726,9 +965,8 @@ if __name__ == '__main__':
         clear_canvas()
         blocks_init()
         player_init()
+        Fly()
 
-        pico2d.opacify(ex_block, 255)
-        
         # draw(Xpos for start, Ypos for start, WIDTH /none, HEIGHT /none)
         ex_block.clip_draw(int(x - MoveDistance) // X_MOVE_POWER, int(y - JumpHeight) // Y_MOVE_POWER, 640, 360, 640, 360, 1280, 720)
 
@@ -740,13 +978,33 @@ if __name__ == '__main__':
         # hero? 128x128
         # 캐릭터 크기 100이 딱 맞는듯
 
-        if player_state == 1:
+        if player_state == 1: # Attack
+            
             if attack_dir == 2 or attack_dir == -2 or attack_dir == 1: # up
                 hero_right.clip_draw(128 * x_frame, 128 * y_frame, 128, 128,   # right로 통일.
                 640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
             elif attack_dir == -1 or attack_dir == 3:
                 hero_left.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
                 640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
+
+
+            # x_frame 6개. # 3, 13
+            if attack_dir == 2: # up
+                hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 70, '',   # right로 통일.
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) + 20, 200 + 75, 150, 150)
+            elif attack_dir == 3:
+                hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 90, '',   # right로 통일.
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) - 30, 200 + 75, 150, 150)
+            elif attack_dir == -1: #left
+                hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 210, '',   # right로 통일.
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) - 75, 200 + 20, 150, 150)
+            elif attack_dir == 1: # right
+                hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 100, '',   # right로 통일.
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) + 75, 200, 150, 150)
+            elif attack_dir == -2: # down
+                hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 325, '',   # right로 통일.
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 - 75, 150, 150)
+
 
 
         elif player_state == 0: # idle 상태라면, 
@@ -757,11 +1015,46 @@ if __name__ == '__main__':
                 hero_left.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
                 640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
 
-        hero_right.clip_draw(128 * 13, 128 * 3, 128, 128,
-                             500, 300, 100, 100)        
+        for m in MONSTERS:
+            if m.type == 'fly':
+                if m.state == 'idle':
+                    if m.dir == -1: fly_idle.clip_draw(fly_idle.w // 5 * m.x_frame, 0, fly_idle.w // 5, fly_idle.h,
+                              int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+                    elif m.dir == 1: fly_idle.clip_composite_draw(fly_idle.w // 5 * m.x_frame, 0, fly_idle.w // 5, fly_idle.h, 0, 'h',
+                              int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+                elif m.state == 'turn' or m.state == 'alert_turn':
+                    if m.dir == -1: fly_turn_left.clip_draw(fly_turn_left.w // 2 * m.x_frame, 0, fly_turn_left.w // 2, fly_turn_left.h,
+                              int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+                    elif m.dir == 1: fly_turn_left.clip_composite_draw(fly_turn_left.w // 2 * m.x_frame, 0, fly_turn_left.w // 2, fly_turn_left.h, 0, 'h',
+                              int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
 
-        
+                elif m.state == 'alert':
+                    if m.dir == -1: fly_chase.clip_draw(fly_chase.w // 4 * m.x_frame, 0, fly_chase.w // 4, fly_chase.h,
+                              int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+                    elif m.dir == 1: fly_chase.clip_composite_draw(fly_chase.w // 4 * m.x_frame, 0, fly_chase.w // 4, fly_chase.h, 0, 'h',
+                              int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
 
+                elif m.state == 'hit':
+                    if m.dir == -1: fly_shock.clip_draw(fly_shock.w // 4 * m.x_frame, 0, fly_shock.w // 4, fly_shock.h,
+                              int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+                    elif m.dir == 1: fly_shock.clip_composite_draw(fly_shock.w // 4 * m.x_frame, 0, fly_shock.w // 4, fly_shock.h, 0, 'h',
+                              int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+
+                elif m.state == 'dying':
+                    if m.dir == -1: fly_die.clip_draw(fly_die.w // 3 * m.x_frame, 0, fly_die.w // 3, fly_die.h,
+                              int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+                    elif m.dir == 1: fly_die.clip_composite_draw(fly_die.w // 3 * m.x_frame, 0, fly_die.w // 3, fly_die.h, 0, 'h',
+                              int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+                
+            # draw_rectangle(int(m.left), int(m.bottom), int(m.left) + m.width, int(m.bottom) + m.height)
+
+        # fly_chase.clip_draw(fly_chase.w // 4 * flycount, 0, fly_chase.w // 4, fly_chase.h,
+        #                      500, 300, 150, 150)
+
+        for i in range(0, player_hp):
+            hp_o.draw(35 * i + 100, 640, int(hp_o.w * 0.7), int(hp_o.h*0.7))
+        for i in range(player_hp, player_full_hp):
+            hp_x.draw(35 * i + 100, 640, int(hp_x.w * 0.7), int(hp_x.h*0.7))
         
         if show_blocks:
             draw_rectangle(PLAYER_RECT.left, PLAYER_RECT.top, PLAYER_RECT.right, PLAYER_RECT.bottom)
@@ -774,6 +1067,7 @@ if __name__ == '__main__':
         Move()
         Jump()
         Attack()
+        # Dirt()
 
         animation_count()
         update_canvas()

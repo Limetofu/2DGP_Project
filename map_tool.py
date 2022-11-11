@@ -1,4 +1,5 @@
 from pico2d import *
+from mj_values import * 
 
 open_canvas(1280, 720)
 
@@ -12,8 +13,6 @@ open_canvas(1280, 720)
 # 생성중인 블럭은 파란색 출력
 # 생성된 블럭은 흰색 출력
 # txt 파일에서
-
-
 
 class BLOCK:
     left: int

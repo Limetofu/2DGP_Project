@@ -1,5 +1,10 @@
 from dataclasses import dataclass
 
+map_y_change = 3100
+map_left_change = 500
+map_left_change = 900
+
+
 X_MOVE_POWER = 3
 Y_MOVE_POWER = 3
 
@@ -18,10 +23,11 @@ now_move_player_right = False
 
 player_on_block_num = -1
 
-
+entire_move_count = 0
 
 player_x = 0
-
+player_full_hp = 5
+player_hp = 3
 
 JumpHeight = 0
 JumpPower = 50.0
@@ -60,8 +66,7 @@ player_state = 0
 # 2 : dying
 # 3 : dead
 
-attack_anime_count = 0
-attack_anime_frame = 80
+attack_anime_frame = 55
 attack_dir = 0
 
 
