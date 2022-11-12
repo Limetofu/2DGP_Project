@@ -75,7 +75,7 @@ MONSTERS[0].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 2500
 MONSTERS[0].count = 0
 MONSTERS[0].x_frame = 0
 MONSTERS[0].dir = -1
-MONSTERS[0].hp = 5
+MONSTERS[0].hp = 3
 
 
 # def move_all(xdir, ydir):
