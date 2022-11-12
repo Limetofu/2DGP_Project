@@ -153,3 +153,9 @@ white_rect.draw(int(block_x - MoveDistance) // 2.5, 360)
 
 Move나 Jump시에 블럭에 걸리는 경우가 생김
 -> repair 함수 만듦
+
+////////
+
+데미지 삭제, 
+monster ai 
+idle alert turn alert_turn hit dying die
