@@ -26,6 +26,8 @@ player_on_block_num = -1
 entire_move_count = 0
 
 player_x = 0
+player_y = 0 # <--- y 변화량만. (아래 바라보거나 / 화면 흔들리는 이펙트)
+
 player_full_hp = 5
 player_hp = 3
 
@@ -40,6 +42,11 @@ JumpAgain = True
 remainJumpCount = 0
 
 
+shake_countY = 0
+shake_countX = 0
+
+
+menu_y_frame = 0
 
 grid_data = []
 

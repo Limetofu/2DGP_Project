@@ -64,7 +64,7 @@ for i in range(0, 10):
 
 MONSTERS = []
 MONSTERS.append(MONSTER())
-MONSTERS[0].x = 2000
+MONSTERS[0].x = 3000
 MONSTERS[0].y = 800
 MONSTERS[0].type = 'fly'
 MONSTERS[0].state = 'idle'
@@ -75,7 +75,7 @@ MONSTERS[0].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 2500
 MONSTERS[0].count = 0
 MONSTERS[0].x_frame = 0
 MONSTERS[0].dir = -1
-MONSTERS[0].hp = 5
+MONSTERS[0].hp = 3
 
 
 # def move_all(xdir, ydir):
@@ -137,9 +137,9 @@ def monster_init():
         m.bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + m.y
 
 
-
 # player JUMP
 # 
+
 
 def Jump():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime
@@ -328,8 +328,7 @@ def Move():
                 pass
 
 
-    if now_move_player_left:
-        # 플레이어를 움직일 차례. -> 맵 끝으로 갔기 때문
+    if now_move_player_left: # 플레이어를 움직일 차례. -> 맵 끝으로 갔기 때문
         PlayerMoveDistance = (MoveTime * MoveTime - MovePower * MoveTime) / MoveValue
         if LeftKeyPressed == 1:
             if player_x - PlayerMoveDistance < 920:
@@ -360,15 +359,14 @@ def Move():
         if int(player_x - PlayerMoveDistance) < 0:
             now_move_player_left = False
 
-    elif now_move_player_right:
-        # 플레이어를 움직일 차례. -> 맵 끝으로 갔기 때문
+    elif now_move_player_right: # 플레이어를 움직일 차례. -> 맵 끝으로 갔기 때문
+
         PlayerMoveDistance = (MoveTime * MoveTime - MovePower * MoveTime) / MoveValue
         if LeftKeyPressed == 1:
             player_x -= PlayerMoveDistance
         if RightKeyPressed == 1:
             if player_x + PlayerMoveDistance > -920:
                 player_x += PlayerMoveDistance
-
         
             # 맵 끝으로 갔을 때, 못움직이게
 
@@ -697,6 +695,7 @@ def handle_events():
     global LeftKeyPressed, RightKeyPressed, MoveCount, MoveTime
     global hero_heading_right, hero_heading_left, x_frame
     global UpKeyPressed, DownKeyPressed, player_state
+    global shake_countY, shake_countX
 
     events = get_events()
     for event in events:
@@ -746,6 +745,22 @@ def handle_events():
                 else:
                     show_blocks = False
 
+
+# ----------------------- shake test ---------------------------
+
+            elif event.key == SDLK_h:
+                if shake_countY == 0: shake_countY = 6
+
+            elif event.key == SDLK_y:
+                if shake_countY == 0: shake_countY = -6
+
+            elif event.key == SDLK_k:
+                if shake_countX == 0: shake_countX = 6
+
+            elif event.key == SDLK_i:
+                if shake_countX == 0: shake_countX = -6
+            
+
             # elif event.key == SDLK_j:
             #     move_all(10, 10)
             # elif event.key == SDLK_l:
@@ -768,6 +783,9 @@ def handle_events():
         # elif event.type == SDL_MOUSEBUTTONDOWN:
         #     if event.button == SDL_BUTTON_LEFT:
                 
+
+
+
         
 
 def collision_repair(i):
@@ -839,12 +857,79 @@ def collision_repair_right(i):
     else:
         return
 
+
+def shake_screen(xvalue, yvalue):
+    global player_x, player_y, y, x
+    global shake_countY, shake_countX
+
+    if yvalue != 0:
+        if 1 <= shake_countY: shake_countY -= 1
+        elif shake_countY <= -1: shake_countY += 1
+    if xvalue != 0:
+        if 1 <= shake_countX: shake_countX -= 1   
+        elif shake_countX <= -1: shake_countX += 1
+
+    #player_x += xvalue
+    y -= yvalue * 2
+    player_y += yvalue
+
+    x += xvalue * 2
+    player_x += xvalue
+
+
+def shake_anime_count():
+    global shake_countY, shake_countX
+
+    if   shake_countY == 0:  pass
+
+    elif shake_countY == 6:  shake_screen(0, -10)
+    elif shake_countY == 5:  shake_screen(0, -15)
+    elif shake_countY == 4:  shake_screen(0,  20)
+    elif shake_countY == 3:  shake_screen(0,  15)
+    elif shake_countY == 2:  shake_screen(0,  -5)
+    elif shake_countY == 1:  shake_screen(0,  -5)
+
+    elif shake_countY == -6: shake_screen(0,  10)
+    elif shake_countY == -5: shake_screen(0,  15)
+    elif shake_countY == -4: shake_screen(0, -20)
+    elif shake_countY == -3: shake_screen(0, -15)
+    elif shake_countY == -2: shake_screen(0,   5)
+    elif shake_countY == -1: shake_screen(0,   5)
+
+
+
+    if   shake_countX == 0:  pass
+
+    elif shake_countX == 6:  shake_screen(-10, 0)
+    elif shake_countX == 5:  shake_screen(-15, 0)
+    elif shake_countX == 4:  shake_screen( 20, 0)
+    elif shake_countX == 3:  shake_screen( 15, 0)
+    elif shake_countX == 2:  shake_screen( -5, 0)
+    elif shake_countX == 1:  shake_screen( -5, 0)
+
+    elif shake_countX == -6: shake_screen( 10, 0)
+    elif shake_countX == -5: shake_screen( 15, 0)
+    elif shake_countX == -4: shake_screen(-20, 0)
+    elif shake_countX == -3: shake_screen(-15, 0)
+    elif shake_countX == -2: shake_screen(  5, 0)
+    elif shake_countX == -1: shake_screen(  5, 0)
+    
+
+
+
+
 def animation_count(): # 16 x 16
     global count, x_frame, y_frame, player_state, hero_heading_left, hero_heading_right
     global LeftKeyPressed, RightKeyPressed, is_falling
     global attack_anime_count, attack_dir
 
+    global menu_y_frame
+
     count += 1
+
+    if count % 7 == 0:
+        shake_anime_count()
+
 
     if player_state == 1:
         if attack_dir == -1: # 유일한 left
@@ -864,9 +949,10 @@ def animation_count(): # 16 x 16
             y_frame = 7
             if attack_anime_count % 10 == 0:
                 x_frame += 1
-            
+    
 
     elif count == 30:
+        menu_y_frame = (menu_y_frame + 1) % 7
         if JumpKeyPressed or JumpAgain or is_falling:
             y_frame = 6
                         # <- 0 ~ 25 상승, 25.2 ~ 50까지 착지.
@@ -943,6 +1029,9 @@ fly_turn_left = load_image('resources/monsters/fly_turn_left.png')
 hp_o = load_image('resources/hp_o.png')
 hp_x = load_image('resources/hp_x.png')
 
+menu_up = load_image('resources/menu_up.png')
+menu_down = load_image('resources/menu_down.png')
+
 # dirt_image = load_image('resources/monsters/dirt.png')
 
 running = 1
@@ -978,42 +1067,44 @@ if __name__ == '__main__':
         # hero? 128x128
         # 캐릭터 크기 100이 딱 맞는듯
 
+
+
         if player_state == 1: # Attack
             
             if attack_dir == 2 or attack_dir == -2 or attack_dir == 1: # up
                 hero_right.clip_draw(128 * x_frame, 128 * y_frame, 128, 128,   # right로 통일.
-                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 + player_y, 100, 100)
             elif attack_dir == -1 or attack_dir == 3:
                 hero_left.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
-                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 + player_y, 100, 100)
 
 
             # x_frame 6개. # 3, 13
             if attack_dir == 2: # up
                 hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 70, '',   # right로 통일.
-                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) + 20, 200 + 75, 150, 150)
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) + 20, 200 + 75 + player_y, 150, 150)
             elif attack_dir == 3:
-                hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 90, '',   # right로 통일.
-                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) - 30, 200 + 75, 150, 150)
+                hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 90, '', 
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) - 30, 200 + 75 + player_y, 150, 150)
             elif attack_dir == -1: #left
-                hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 210, '',   # right로 통일.
-                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) - 75, 200 + 20, 150, 150)
+                hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 210, '', 
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) - 75, 200 + 20 + player_y, 150, 150)
             elif attack_dir == 1: # right
-                hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 100, '',   # right로 통일.
-                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) + 75, 200, 150, 150)
+                hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 100, '',
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) + 75, 200 + player_y, 150, 150)
             elif attack_dir == -2: # down
-                hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 325, '',   # right로 통일.
-                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 - 75, 150, 150)
+                hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 325, '',
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 - 75 + player_y, 150, 150)
 
 
 
         elif player_state == 0: # idle 상태라면, 
             if hero_heading_right == 1:
                 hero_right.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
-                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 + player_y, 100, 100)
             elif hero_heading_left == 1:
                 hero_left.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
-                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200, 100, 100)
+                640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 + player_y, 100, 100)
 
         for m in MONSTERS:
             if m.type == 'fly':
@@ -1046,6 +1137,8 @@ if __name__ == '__main__':
                     elif m.dir == 1: fly_die.clip_composite_draw(fly_die.w // 3 * m.x_frame, 0, fly_die.w // 3, fly_die.h, 0, 'h',
                               int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
                 
+        menu_up.clip_draw(0, menu_up.h // 7 * menu_y_frame, menu_up.w, menu_up.h // 7, 150, 400, menu_up.w, menu_up.h)
+
             # draw_rectangle(int(m.left), int(m.bottom), int(m.left) + m.width, int(m.bottom) + m.height)
 
         # fly_chase.clip_draw(fly_chase.w // 4 * flycount, 0, fly_chase.w // 4, fly_chase.h,

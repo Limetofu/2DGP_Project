@@ -264,6 +264,7 @@ while running:
 
     # block_white.draw(left, bottom, 40, 40)
 
+
     # 불러온 데이터만큼
     # 이미지 그리기
     for i in range(BLOCK_CNT):
@@ -273,7 +274,6 @@ while running:
             block_white.draw(blocks[i].left + (blocks[i].width // 2), blocks[i].bottom + (blocks[i].height // 2), blocks[i].width, blocks[i].height)
         elif blocks[i].type == 3:
             block_black.draw(blocks[i].left + (blocks[i].width // 2), blocks[i].bottom + (blocks[i].height // 2), blocks[i].width, blocks[i].height)
-
         
         draw_rectangle(blocks[i].left, blocks[i].bottom, blocks[i].left + blocks[i].width, blocks[i].bottom + blocks[i].height)
     
