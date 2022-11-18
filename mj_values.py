@@ -4,6 +4,7 @@ map_y_change = 3100
 map_left_change = 500
 map_left_change = 900
 
+running = False
 
 X_MOVE_POWER = 3
 Y_MOVE_POWER = 3
@@ -41,12 +42,18 @@ JumpAgain = True
 
 remainJumpCount = 0
 
+black_rect, white_rect, hero_right, hero_left, ex_map, ex_block = None, None, None, None, None, None
+fly_idle, fly_chase, fly_die, fly_turn_left, fly_shock = None, None, None, None, None
+hp_o, hp_x = None, None
+hit_effect_image = None
+
 
 shake_countY = 0
 shake_countX = 0
+shake_hit_count = 0
+hit_effect = []
 
 
-menu_y_frame = 0
 
 grid_data = []
 
@@ -76,5 +83,53 @@ player_state = 0
 attack_anime_frame = 55
 attack_dir = 0
 
-
 StageNum = 1
+
+phun = []
+
+penable_dark = True
+pdark_anime_count = 0
+pdark_count = 9
+pdark_dir = -1
+
+
+# ---------------------- menu --------------------------
+
+logo_running = True
+
+menu_anime_count = 0
+
+shake_count_menuY, shake_count_menuX = 0, 0
+menu_backgroundX, menu_backgroundY = 0, 0
+menu_move_count = 0
+break_move_count = 0
+menu_dir = 1
+
+menu_left_x_frame = 0
+
+menu_num = 1
+
+enter_pressed = False
+menu_font, menu_background, menu_left = None, None, None
+menu_logo = None
+
+hun = []
+
+enable_dark = True
+dark_anime_count = 0
+dark_count = 9
+dark_dir = -1
+
+# ---------------------- key guide --------------------------
+
+key_running = False
+
+key_image = None
+esc_pressed = False
+
+khun = []
+
+kenable_dark = True
+kdark_anime_count = 0
+kdark_count = 9
+kdark_dir = -1
