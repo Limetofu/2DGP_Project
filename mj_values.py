@@ -9,6 +9,10 @@ running = False
 X_MOVE_POWER = 3
 Y_MOVE_POWER = 3
 
+stop_count = 0
+if_stop_screen = False
+stop_count_limit = 0
+
 BLOCK_CNT = 0
 
 x = 0.0
@@ -30,7 +34,7 @@ player_x = 0
 player_y = 0 # <--- y 변화량만. (아래 바라보거나 / 화면 흔들리는 이펙트)
 
 player_full_hp = 5
-player_hp = 3
+player_hp = 5
 
 JumpHeight = 0
 JumpPower = 50.0
@@ -44,16 +48,18 @@ remainJumpCount = 0
 
 black_rect, white_rect, hero_right, hero_left, ex_map, ex_block = None, None, None, None, None, None
 fly_idle, fly_chase, fly_die, fly_turn_left, fly_shock = None, None, None, None, None
-hp_o, hp_x = None, None
-hit_effect_image = None
+hp_o, hp_x, hp_breaking = None, None, None
+hp_x_frame = 0
+hp_to_break = -1
 
+hit_effect_image = None
+hero_right_hit, hero_left_hit = None, None
 
 shake_countY = 0
 shake_countX = 0
 shake_hit_count = 0
 hit_effect = []
-
-
+hit_count = 0
 
 grid_data = []
 
@@ -77,8 +83,9 @@ show_blocks = False
 player_state = 0 
 # 0 : idle, jump, move
 # 1 : attack
-# 2 : dying
-# 3 : dead
+# 2 : getting hit
+# 3 : dying
+# 4 : dead
 
 attack_anime_frame = 55
 attack_dir = 0

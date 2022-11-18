@@ -32,6 +32,9 @@ class MONSTER:
 
     left: int
     bottom: int
+    right: int
+    top: int
+
     width: int
     height: int
     type: str
@@ -78,7 +81,9 @@ MONSTERS[0].state = 'idle'
 MONSTERS[0].width = 150
 MONSTERS[0].height = 150
 MONSTERS[0].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + 3385
+MONSTERS[0].right = MONSTERS[0].left + MONSTERS[0].width
 MONSTERS[0].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 2500
+MONSTERS[0].top = MONSTERS[0].bottom + MONSTERS[0].height
 MONSTERS[0].count = 0
 MONSTERS[0].x_frame = 0
 MONSTERS[0].dir = -1
@@ -128,7 +133,9 @@ def monster_init():
 
     for m in MONSTERS:
         m.left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + m.x
+        m.right = m.left + m.width
         m.bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + m.y
+        m.top = m.bottom + m.height
 
 def init_dark_images():
     global phun
@@ -211,18 +218,6 @@ def Jump():
     ##  2. 블럭 위에 도착했을 때
     ##      -> is_falling 상태일 때만 활성화하기.
     ##  3. 블럭 아래에 부딪혔을 때
-
-    # print(JumpTime, JumpPower, "///",  y - JumpHeight)
-
-    # if JumpTime > JumpPower and y - JumpHeight <= 99: # 
-    #     JumpTime = 0
-    #     y = y - JumpHeight
-    #     block_y = block_y + JumpHeight
-    #     JumpHeight = 0
-    #     JumpKeyPressed = False
-    #     JumpAgain = False
-
-    #     is_falling = False
     
     for i in range(BLOCK_CNT):
         # 충돌 검사. BLOCK_CNT만큼
@@ -251,38 +246,7 @@ def Jump():
 
         temp_rect.top, temp_rect.bottom = BLOCKS[i].bottom - 8, BLOCKS[i].bottom - 8
         if collision_check(temp_rect, PLAYER_RECT) and is_falling == False:
-            # 위와 같이 통통 튀어오르는게 아니라.... 
-            # 올라갈 때 남은 JumpTime 만큼 멈췄다가
-            # 다시 내려와야 함.
-            # 일단 거의 50이라고 가정.
-            # 내려오고 93까지 내려가기도 하니까..
-
-            # 총 50번 수행.
-            # 남은 JumpTime 증가 횟수 to 25번
-            # 다른 변수에 저장.
-            # 그 변수만큼 main에서 y값 block_y값 내려주기..? -> 가만 있어야 함.
-
-            # 아래 식으로 했을 때 더블 점프했을 때 너무 격하게 내려옴.
-            #   JumpTime = 50 - JumpTime
-            # 더블 점프 시에는 안정적이게 해줘야 할듯.
-
-            # 더블 점프 시 블럭을 통과함.
-            #  -> 첫 점프 후 바닥 충돌, 이후 떨어지면서 다시 점프 시 블럭 통과.
-            #      sol) is_falling을 더블 점프 시에 false로 바꾸지 않음.
-            
-            # 다시.. count를 써본다면?
-            # 원작 게임과 같이 점프를 구현?
-            # JumpPower를 case마다 바꿔줘야 함.
-            # 변곡점이 매번 달라지는 점프?
-            # 노가다로 최저점, 최고점 점프 세분화해서 만들면 가능.
-
-            # 남은 JumpTime 증가 갯수만큼 remainJumpCount 저장
-            # 해당 위치에 JumpHeight 고정, remainJumpCount--;
-            # remainJumpCount 모두 감소되면, 다시 떨어지게 만들어줌.
-            #   -> 여기서 JumpTime = 50 - JumpTime!
-            # remainJumpCount 조건문에 추가, 충돌이 유지돼서 무한 반복하는걸 막아줘야 함.
-            # bool 변수 하나 더 추가?  
-            
+            # 바닥 충돌
 
             print("Before:", JumpTime)
             if JumpAgain:
@@ -730,8 +694,6 @@ def change_state_alert(i):
             MONSTERS[i].x_frame = 0
             MONSTERS[i].count = 0
 
-
-
 def monster_animation():
     global MONSTERS
 
@@ -749,8 +711,38 @@ def monster_animation():
 
     monster_init()
 
+def intersect_hit_by_monster():
+    global MONSTERS, PLAYER_RECT
+    global player_state, x_frame, shake_countX
+    for m in MONSTERS:
+        if collision_check(m, PLAYER_RECT) and player_state != 2: # 맞고 더블로 맞지 않게
+            stop_screen(200)
+            player_state = 2
+            break_hp(player_hp)
+            if shake_countX == 0: shake_countX = 6
 
+def hit_god_count():
+    global player_state, hit_count
+    if player_state == 2:
+        hit_count += 1
+        if hit_count == 240:
+            player_state = 0
+            hit_count = 0
 
+def stop_screen(t):
+    global stop_count, if_stop_screen, stop_count_limit
+    if_stop_screen = True
+    stop_count_limit = t
+
+def stop_screen_count():
+    global stop_count, if_stop_screen, stop_count_limit
+
+    if stop_count_limit > 0:
+        stop_count += 1
+        if stop_count == stop_count_limit:
+            stop_count = 0
+            if_stop_screen = False
+            stop_count_limit = 0
 
 def handle_events():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime, player_on_block_num, is_falling
@@ -999,6 +991,7 @@ def animation_count(): # 16 x 16
     global count, x_frame, y_frame, player_state, hero_heading_left, hero_heading_right
     global LeftKeyPressed, RightKeyPressed, is_falling
     global attack_anime_count, attack_dir
+    global hp_x_frame, hp_to_break
 
     count += 1
 
@@ -1026,6 +1019,14 @@ def animation_count(): # 16 x 16
     
 
     elif count == 30:
+        if hp_x_frame == 2:
+            hp_x_frame = 3
+            hp_to_break = -1
+        elif hp_x_frame == 3:
+            hp_x_frame = 0
+        else:
+            hp_x_frame += 1
+
         if JumpKeyPressed or JumpAgain or is_falling:
             y_frame = 6
                         # <- 0 ~ 25 상승, 25.2 ~ 50까지 착지.
@@ -1088,11 +1089,16 @@ def animation_count(): # 16 x 16
 def init_image():
     global white_rect, hero_right, hero_left, ex_map, ex_block
     global fly_idle, fly_chase, fly_die, fly_turn_left, fly_shock
-    global hp_o, hp_x, hit_effect_image
+    global hp_o, hp_x, hit_effect_image, hp_breaking
+    global hero_right_hit, hero_left_hit
 
     white_rect = load_image('resources/white_rect.png')
     hero_right = load_image('resources/knight_hero_right.png')
     hero_left = load_image('resources/knight_hero_left.png')
+
+    hero_right_hit = load_image('resources/knight_hero_right_hit.png')
+    hero_left_hit = load_image('resources/knight_hero_left_hit.png')
+
     ex_map = load_image('resources/map_ex.png')
     ex_block = load_image('resources/first_map.png')
 
@@ -1104,7 +1110,10 @@ def init_image():
 
     hp_o = load_image('resources/hp_o.png')
     hp_x = load_image('resources/hp_x.png')
+    hp_breaking = load_image('resources/hp_breaking.png')
     hit_effect_image = load_image('resources/hit_effect_left.png')
+
+
 
 # dirt_image = load_image('resources/monsters/dirt.png')
 
@@ -1146,14 +1155,20 @@ def draw_player():
             hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 325, '',
             640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 - 75 + player_y, 150, 150)
 
-
-
     elif player_state == 0: # idle 상태라면, 
         if hero_heading_right == 1:
             hero_right.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
             640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 + player_y, 100, 100)
         elif hero_heading_left == 1:
             hero_left.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
+            640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 + player_y, 100, 100)
+
+    elif player_state == 2: # hit by monsters
+        if hero_heading_right == 1:
+            hero_right_hit.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
+            640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 + player_y, 100, 100)
+        elif hero_heading_left == 1:
+            hero_left_hit.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
             640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 + player_y, 100, 100)
 
 def draw_monster():
@@ -1202,6 +1217,28 @@ def draw_hp():
     for i in range(player_hp, player_full_hp):
             hp_x.draw(35 * i + 100, 640, int(hp_x.w * 0.7), int(hp_x.h*0.7))
 
+def break_hp(hp):
+    global hp_to_break, player_hp, player_state, hp_x_frame
+    
+    if player_hp - 1 <= 0:
+        player_state = 3
+        return
+
+    hp_to_break = hp
+    player_hp -= 1
+    hp_x_frame = 3
+
+def draw_breaking_hp():
+    global player_hp, player_full_hp
+    global hp_breaking, hp_x_frame
+    global hp_to_break
+
+    if hp_to_break >= 0:
+        hp_breaking.clip_draw_to_origin(hp_breaking.w // 4 * hp_x_frame, 0, hp_breaking.w // 4, hp_breaking.h,
+                                        35 * (hp_to_break) + 47, 605, 35, 65)
+
+
+
 def Game_State():
     init_image()
 
@@ -1211,15 +1248,12 @@ def Game_State():
     Fly()
     animation_count()
     init_dark_images()
-    global penable_dark
+    global penable_dark, if_stop_screen
     penable_dark = True
     running = True
 
     while running:
         clear_canvas()
-        blocks_init()
-        player_init()
-        Fly()
 
         # draw(Xpos for start, Ypos for start, WIDTH /none, HEIGHT /none)
         ex_block.clip_draw(int(x - MoveDistance) // X_MOVE_POWER, int(y - JumpHeight) // Y_MOVE_POWER, 640, 360, 640, 360, 1280, 720)
@@ -1227,28 +1261,36 @@ def Game_State():
         draw_player()
         draw_monster()
         draw_hp()
-
-        
-        attack_effect_count()
+        draw_breaking_hp()
         draw_attack_effect()
-
 
         if show_blocks:
             draw_rectangle(PLAYER_RECT.left, PLAYER_RECT.top, PLAYER_RECT.right, PLAYER_RECT.bottom)
             for i in range(BLOCK_CNT):
                 draw_rectangle(BLOCKS[i].left, BLOCKS[i].bottom, BLOCKS[i].right, BLOCKS[i].top)
-        
-        handle_events()
 
-        Move()
-        Jump()
-        Attack()
-        # Dirt()
+        if if_stop_screen == False:
+            handle_events()
 
-        animation_count()
+            Fly()
+            Move()
+            Jump()
+            Attack()
+            # Dirt()
 
-        pdraw_dark()
-        pdark_animation()
+            blocks_init()
+            player_init()
+
+            attack_effect_count()
+            animation_count()
+            intersect_hit_by_monster()
+            hit_god_count()
+
+            pdraw_dark()
+            pdark_animation()
+        else:
+            stop_screen_count()
+
 
         update_canvas()
 
