@@ -40,11 +40,12 @@ JumpHeight = 0
 JumpPower = 50.0
 JumpTime = JumpPower // 2 + 1.0
 
+RemainJumpTimeCount = 0
+
 JumpKeyPressed = True
 is_falling = True
 JumpAgain = True
 
-remainJumpCount = 0
 
 black_rect, white_rect, hero_right, hero_left, ex_map, ex_block = None, None, None, None, None, None
 fly_idle, fly_chase, fly_die, fly_turn_left, fly_shock = None, None, None, None, None

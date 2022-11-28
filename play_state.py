@@ -192,7 +192,7 @@ def pdraw_dark():
 
 def Jump():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime
-    global JumpAgain
+    global JumpAgain, RemainJumpTimeCount
     global y, block_y
     global is_falling
     global player_on_block_num
@@ -204,7 +204,14 @@ def Jump():
         return
 
     JumpHeight = (JumpTime * JumpTime - JumpPower * JumpTime) / 2.0
-    JumpTime += 0.2
+    
+    if RemainJumpTimeCount > 0:
+        RemainJumpTimeCount -= 4
+        if RemainJumpTimeCount <= 0:
+            JumpTime = 50 - JumpTime
+            RemainJumpTimeCount = 0
+    else:
+        JumpTime += 0.2
 
     # 변곡점 --> JumpHeight = -312.5
     if JumpHeight <= -312:
@@ -213,11 +220,9 @@ def Jump():
 
     # 점프 끝내는 조건문
     ## 끝내야 할 때?
-    ##  1. 땅에 도착했을 때
-    ##      -> 2번이랑 같은 조건
-    ##  2. 블럭 위에 도착했을 때
+    ##  1. 블럭 위에 도착했을 때
     ##      -> is_falling 상태일 때만 활성화하기.
-    ##  3. 블럭 아래에 부딪혔을 때
+    ##  2. 블럭 아래에 부딪혔을 때
     
     for i in range(BLOCK_CNT):
         # 충돌 검사. BLOCK_CNT만큼
@@ -248,21 +253,22 @@ def Jump():
         if collision_check(temp_rect, PLAYER_RECT) and is_falling == False:
             # 바닥 충돌
 
-            print("Before:", JumpTime)
-            if JumpAgain:
-                JumpTime = 50 - JumpTime
-            else:
-                JumpTime = 50 - JumpTime
-
             collision_repair_bottom(i)
 
-            print("After:", JumpTime)
+            
+            # if JumpAgain:
+            #     JumpTime = 50 - JumpTime
+            # else:
+            #     JumpTime = 50 - JumpTime
+
+            RemainJumpTimeCount = (25 - JumpTime) / 0.2 + 0.1
+
 
             JumpHeight = (JumpTime * JumpTime - JumpPower * JumpTime) / 2.0
 
             # draw_rectangle(temp_rect.left, temp_rect.bottom - 1, temp_rect.right, temp_rect.top + 1)
             update_canvas()
-            print("bottom col")
+            #print("bottom col")
 
             is_falling = True
 
@@ -582,8 +588,6 @@ def draw_attack_effect():
             hit_effect_image.clip_draw_to_origin(hit_effect_image.w // 3 * a.x_frame, 0, hit_effect_image.w // 3, hit_effect_image.h,
                                                  a.x, a.y, hit_effect_image.w // 3, hit_effect_image.h)
 
-
-
 def Fly():
     global MONSTERS
 
@@ -591,7 +595,7 @@ def Fly():
 
     # 1. idle
     #   기본 위치에서 좌우로 이동
-    #   끝에 가면 잠시 멈추고, 방향 바꾸고 turn 상태 출력 후  
+    #   끝에 가면 잠시 멈추고, 방향 바꾸고 turn 상태 출력 후
     #   반대 방향으로 바꾸기. (count 초기화)
     for m in MONSTERS:
         dataclass_num += 1
@@ -617,32 +621,32 @@ def Fly():
                     m.count = 0
                     m.x_frame = 0
 
-
-
             elif m.state == 'alert': # chase anime
             
+                print(PLAYER_RECT.top, m.bottom)
                 if m.dir == -1: # 왼쪽 바라볼 때
                     if m.count > 250:
                         m.x -= 1
-                        if m.bottom - 10 > PLAYER_RECT.top:
-                            m.y -= 0.25
-                        elif m.bottom + m.height + 10 < PLAYER_RECT.bottom:
-                            m.y += 0.25
+                        if m.bottom + 10 > PLAYER_RECT.top:
+                            m.y -= 0.5
+                        elif m.bottom + m.height - 10 < PLAYER_RECT.bottom:
+                            m.y += 0.5
 
-                    if PLAYER_RECT.left > m.left:
+                    if PLAYER_RECT.right > m.left + m.width:
                         m.count = 0
                         m.x_frame = 0
                         m.state = 'alert_turn'
                         m.dir *= -1
+
                 elif m.dir == 1:
                     if m.count > 250:
                         m.x += 1
-                        if m.bottom - 10 > PLAYER_RECT.top:
-                            m.y -= 0.25
-                        elif m.bottom + m.height + 10 < PLAYER_RECT.bottom:
-                            m.y += 0.25
+                        if m.bottom + 10 > PLAYER_RECT.top:
+                            m.y -= 0.5
+                        elif m.bottom + m.height - 10 < PLAYER_RECT.bottom:
+                            m.y += 0.5
 
-                    if PLAYER_RECT.right < m.left + m.width:
+                    if PLAYER_RECT.right < m.left:
                         m.count = 0
                         m.x_frame = 0
                         m.state = 'alert_turn'
@@ -677,6 +681,9 @@ def Fly():
     #   플레이어 위치와 가까워지면, 
     monster_animation()
     
+def Tiktik():
+    pass
+
 def change_state_alert(i):
     global MONSTERS, PLAYER_RECT
 
@@ -715,7 +722,7 @@ def intersect_hit_by_monster():
     global MONSTERS, PLAYER_RECT
     global player_state, x_frame, shake_countX
     for m in MONSTERS:
-        if collision_check(m, PLAYER_RECT) and player_state != 2: # 맞고 더블로 맞지 않게
+        if collision_check(m, PLAYER_RECT) and player_state != 2 and (m.state == 'alert' or m.state == 'alert_turn' or m.state == 'idle' or m.state == 'turn'): # 맞고 더블로 맞지 않게
             stop_screen(200)
             player_state = 2
             break_hp(player_hp)
