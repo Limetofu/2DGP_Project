@@ -1,9 +1,5 @@
 from dataclasses import dataclass
 
-map_y_change = 3100
-map_left_change = 500
-map_left_change = 900
-
 running = False
 
 X_MOVE_POWER = 3
@@ -80,6 +76,8 @@ LeftKeyPressed = 0
 RightKeyPressed = 0
 UpKeyPressed, DownKeyPressed = 0, 0
 MoveCount = 0
+
+DashCount = 0
 
 can_climb_left = False
 can_climb_right = False

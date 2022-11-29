@@ -66,39 +66,6 @@ PLAYER_RECT = RECT()
 
 MONSTERS = []
 
-# MONSTERS.append(MONSTER())
-# MONSTERS[0].x = 3000
-# MONSTERS[0].y = 800
-# MONSTERS[0].type = 'fly'
-# MONSTERS[0].state = 'idle'
-# MONSTERS[0].width = 150
-# MONSTERS[0].height = 150
-# MONSTERS[0].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + 3385
-# MONSTERS[0].right = MONSTERS[0].left + MONSTERS[0].width
-# MONSTERS[0].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 2500
-# MONSTERS[0].top = MONSTERS[0].bottom + MONSTERS[0].height
-# MONSTERS[0].count = 0
-# MONSTERS[0].x_frame = 0
-# MONSTERS[0].dir = -1
-# MONSTERS[0].hp = 3
-
-# MONSTERS.append(MONSTER())
-# MONSTERS[1].x = 3000
-# MONSTERS[1].y = 500
-# MONSTERS[1].type = 'tiktik'
-# MONSTERS[1].state = 'idle'
-# MONSTERS[1].width = 93
-# MONSTERS[1].height = 80
-# MONSTERS[1].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + 3385
-# MONSTERS[1].right = MONSTERS[1].left + MONSTERS[1].width
-# MONSTERS[1].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 2500
-# MONSTERS[1].top = MONSTERS[1].bottom + MONSTERS[1].height
-# MONSTERS[1].count = 0
-# MONSTERS[1].x_frame = 0
-# MONSTERS[1].dir = 1
-# MONSTERS[1].hp = 3
-
-
 def load_block():
     global BLOCKS, BLOCK_CNT, grid_data
     
@@ -157,7 +124,6 @@ def load_monster():
 
         print(MONSTERS[i].type, MONSTERS[i].state, MONSTERS[i].hp, MONSTERS[i].dir)
 
-
 def blocks_init():
     global BLOCKS, block_x, block_y, MoveDistance, JumpHeight, BLOCK_CNT
     global X_MOVE_POWER, Y_MOVE_POWER
@@ -197,9 +163,6 @@ def monster_init():
             m.bbottom = m.bottom
             m.btop = m.top
 
-def effect_init():
-    pass
-
 def init_dark_images():
     global phun
     if len(phun) == 0:
@@ -216,6 +179,7 @@ def init_dark_images():
 
 def pdark_animation():
     global penable_dark, pdark_count, pdark_dir, pdark_anime_count, pdc
+    global player_state
 
     if penable_dark:
         pdark_anime_count += 1
@@ -228,6 +192,8 @@ def pdark_animation():
                     pdark_anime_count = 0
                     penable_dark = False
                     pdc = 0
+                    if player_state == 3:
+                        player_state = 0
                 else:
                     pdark_count += 1
 
@@ -354,19 +320,23 @@ def Jump():
                 JumpAgain = False
                 return
 
-
 def Move():
     global LeftKeyPressed, RightKeyPressed, MoveDistance, PlayerMoveDistance, MovePower, MoveTime, MoveCount, x, y
     global block_x, X_MOVE_POWER, now_move_player_left, now_move_player_right, player_x, ex_block, block_y
     global JumpTime, JumpKeyPressed, player_on_block_num, is_falling, JumpHeight, JumpPower
     global can_climb_left, can_climb_right
     global entire_move_count
+    global DashCount
     # Distance에 상한을 정하고, 최대 속력을 맞추기
 
     MoveValue = 600.0
     MoveCountLimit = 100
     MoveTimeChange = 0.1
-
+    if DashCount > 0:
+        MovePower = 1000.0
+        DashCount -= 1
+    else:
+        MovePower = 200.0
 
     # 둘 다 누른 상태가 아니거나, 둘 다 눌렀다가 뗸 상태도 아니면, 바로 종료하기
     if LeftKeyPressed == 0 and RightKeyPressed == 0 and MoveCount == 0:
@@ -404,7 +374,6 @@ def Move():
         # player_on_block_num이 현재 i랑 같을 때,
         # i번째 block 좌우로 player_rect가 나간다면?
         # => 떨어져야 함
-
         
         if i == player_on_block_num and JumpKeyPressed == 0:
             if PLAYER_RECT.right > BLOCKS[i].left - 5 and PLAYER_RECT.left > BLOCKS[i].right + 5 or \
@@ -564,20 +533,24 @@ def Attack():
     # attack_dir != 0  -> 공격중
 
     if attack_dir == 0:
+
         attack_anime_count = 0 # count 초기화. 새 공격이기 때문
         if DownKeyPressed:
             attack_dir = -2
             x_frame = 7
             for m in MONSTERS:
                 if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn') and \
-                    PLAYER_RECT.left - 50 < m.left + 75 < PLAYER_RECT.left + 50 and \
-                    PLAYER_RECT.bottom - 400 < m.bottom < PLAYER_RECT.bottom + 20:
+                    PLAYER_RECT.left - 80 < m.bleft + (m.width // 2) < PLAYER_RECT.right + 80 and \
+                    PLAYER_RECT.bottom - 150 < m.btop < PLAYER_RECT.bottom:
                     m.state = 'hit'
                     m.count = 0
                     m.x_frame = 0
                     m.hp -= 1
                     shake_hit_count = 6
                     attack_effect(m.left + (m.width // 2), m.bottom + (m.height // 2), 'down')
+
+
+
 
         elif UpKeyPressed:
             if hero_heading_left:
@@ -588,14 +561,14 @@ def Attack():
                 x_frame = 0
             for m in MONSTERS:
                 if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn') and \
-                    PLAYER_RECT.left - 50 < m.left + 75 < PLAYER_RECT.left + 50 and \
-                    PLAYER_RECT.bottom + 20 < m.bottom < PLAYER_RECT.bottom + 400:
+                    PLAYER_RECT.left - 80 < m.bleft + (m.width // 2) < PLAYER_RECT.left + 80 and \
+                    PLAYER_RECT.top < m.bbottom < PLAYER_RECT.top + 150:
                     m.state = 'hit'
                     m.count = 0
                     m.x_frame = 0
                     m.hp -= 1
                     shake_hit_count = 6
-                    attack_effect(m.left + (m.width // 2), m.bottom, 'up')
+                    attack_effect(m.bleft + (m.width // 2), m.bbottom, 'up')
             
 
         elif hero_heading_left:
@@ -603,28 +576,28 @@ def Attack():
             x_frame = 15
             for m in MONSTERS:
                 if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn') and \
-                    PLAYER_RECT.left - 150 < m.left + 150 < PLAYER_RECT.left and \
-                    PLAYER_RECT.bottom - 50 < m.bottom < PLAYER_RECT.bottom + 200:
+                    PLAYER_RECT.left - 150 < m.bright < PLAYER_RECT.left and \
+                    PLAYER_RECT.bottom - 50 < m.bbottom < PLAYER_RECT.top + 50:
                     m.state = 'hit'
                     m.count = 0
                     m.x_frame = 0
                     m.hp -= 1
                     shake_hit_count = 6
-                    attack_effect(m.right, m.bottom, 'right')
+                    attack_effect(m.bright, m.bbottom, 'right')
         
         else:
             attack_dir = 1
             x_frame = 0
             for m in MONSTERS:
                 if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn') and \
-                    PLAYER_RECT.right < m.left < PLAYER_RECT.right + 150 and \
-                    PLAYER_RECT.bottom - 50 < m.bottom < PLAYER_RECT.bottom + 200:
+                    PLAYER_RECT.right < m.bleft < PLAYER_RECT.right + 150 and \
+                    PLAYER_RECT.bottom - 50 < m.bbottom < PLAYER_RECT.top + 50:
                     m.state = 'hit'
                     m.count = 0
                     m.x_frame = 0
                     m.hp -= 1
                     shake_hit_count = 6
-                    attack_effect(m.left, m.bottom, 'left')
+                    attack_effect(m.bleft, m.bbottom, 'left')
     
     else: # 0이 아님! -> 공격중. count 올려주자
         if attack_anime_count > attack_anime_frame:
@@ -872,11 +845,12 @@ def monster_animation():
 
 def intersect_hit_by_monster():
     global MONSTERS, PLAYER_RECT
-    global player_state, x_frame, shake_countX
+    global player_state, x_frame, shake_countX, DashCount
     for m in MONSTERS:
         if m.btop > PLAYER_RECT.bottom and PLAYER_RECT.top > m.bbottom and m.bleft < PLAYER_RECT.right and PLAYER_RECT.left < m.bright \
           and player_state != 2 \
-          and (m.state == 'alert' or m.state == 'alert_turn' or m.state == 'idle' or m.state == 'turn'): # 맞고 더블로 맞지 않게
+          and (m.state == 'alert' or m.state == 'alert_turn' or m.state == 'idle' or m.state == 'turn') \
+          and not (10 <= DashCount <= 30): # 맞고 더블로 맞지 않게
 
             stop_screen(200)
             player_state = 2
@@ -891,7 +865,7 @@ def hit_god_count():
             player_state = 0
             hit_count = 0
 
-def stop_screen(t):
+def stop_screen(t, die=False):
     global stop_count, if_stop_screen, stop_count_limit
     if_stop_screen = True
     stop_count_limit = t
@@ -916,6 +890,7 @@ def handle_events():
     global UpKeyPressed, DownKeyPressed, player_state
     global shake_countY, shake_countX
     global StageNum, player_move_y, boss_stage_jump_value
+    global DashCount
 
     events = get_events()
     for event in events:
@@ -979,6 +954,9 @@ def handle_events():
                     show_blocks = True
                 else:
                     show_blocks = False
+
+            elif event.key == SDLK_LSHIFT:
+                DashCount = 30
             elif event.key == SDLK_2:
                 StageNum = 2
             elif event.key == SDLK_1:
@@ -1423,11 +1401,14 @@ def draw_hp():
 
 def break_hp(hp):
     global hp_to_break, player_hp, player_state, hp_x_frame
+    global penable_dark
     
     if player_hp - 1 <= 0:
         player_state = 3
+        stop_screen(150)
+        penable_dark = True
         return
-
+    
     hp_to_break = hp
     player_hp -= 1
     hp_x_frame = 3
@@ -1451,12 +1432,12 @@ def Game_State():
     monster_init()
     
     player_init()
-    effect_init()
     Fly()
     animation_count()
     init_dark_images()
     global penable_dark, if_stop_screen
     penable_dark = True
+
     running = True
 
     while running:
@@ -1476,6 +1457,9 @@ def Game_State():
             for i in range(BLOCK_CNT):
                 draw_rectangle(BLOCKS[i].left, BLOCKS[i].bottom, BLOCKS[i].right, BLOCKS[i].top)
 
+        pdark_animation()
+        pdraw_dark()
+
         if if_stop_screen == False:
             handle_events()
 
@@ -1483,19 +1467,17 @@ def Game_State():
             Move()
             Jump()
             Attack()
-            # Dirt()
 
             blocks_init()
             player_init()
-            effect_init()
 
             attack_effect_count()
             animation_count()
             intersect_hit_by_monster()
             hit_god_count()
 
-            pdraw_dark()
-            pdark_animation()
+            
+            
         else:
             stop_screen_count()
 
