@@ -32,6 +32,11 @@ entire_move_count = 0
 
 player_x = 0
 player_y = 0 # <--- y 변화량만. (아래 바라보거나 / 화면 흔들리는 이펙트)
+player_move_y = 0 # 보스 스테이지에서 수정하는 값
+
+x_frame = 0
+y_frame = 15
+count = 0
 
 player_full_hp = 5
 player_hp = 5
@@ -46,9 +51,12 @@ JumpKeyPressed = True
 is_falling = True
 JumpAgain = True
 
+MONSTER_CNT, monster_data = 0, []
 
 black_rect, white_rect, hero_right, hero_left, ex_map, ex_block = None, None, None, None, None, None
 fly_idle, fly_chase, fly_die, fly_turn_left, fly_shock = None, None, None, None, None
+tiktik_idle, tiktik_dying, tiktik_stun = None, None, None
+
 hp_o, hp_x, hp_breaking = None, None, None
 hp_x_frame = 0
 hp_to_break = -1
@@ -92,6 +100,7 @@ attack_anime_frame = 55
 attack_dir = 0
 
 StageNum = 1
+boss_stage_jump_value = 0
 
 phun = []
 
@@ -99,6 +108,8 @@ penable_dark = True
 pdark_anime_count = 0
 pdark_count = 9
 pdark_dir = -1
+
+pdc = 0
 
 
 # ---------------------- menu --------------------------

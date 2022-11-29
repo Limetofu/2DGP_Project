@@ -14,48 +14,74 @@ open_canvas(1280, 720)
 # 생성된 블럭은 흰색 출력
 # txt 파일에서
 
-class BLOCK:
-    left: int
-    bottom: int
-    width: int
-    height: int
-    type: int
-    
-blocks = []
-grid_data = []
-
-
-map_x, map_y = 0, 0
-
-
-
-with open("grid_data.txt", "r") as file:
-    data = file.readlines()
-
-BLOCK_CNT, ORIGINAL_BLOCK_CNT = len(data), len(data)
-
-file.close()
-
-
 def change_type(i, a):
     my_list = list(data[i])
     my_list[24] = '%d' % a
     new_data = ''.join(my_list)
     data[i] = new_data
 
+class BLOCK:
+    left: int
+    bottom: int
+    width: int
+    height: int
+    type: int
+
+class MONSTER:
+    left: int
+    bottom: int
+    width: int
+    height: int
+    type: int
+
+blocks = []
+monster_data = []
+
+grid_blocks = []
+grid_data = []
+
+map_x, map_y = 0, 0
+
+with open("monster_data.txt", "r") as file:
+    data = file.readlines()
+MONSTER_CNT, ORIGINAL_MONSTER_CNT = len(data), len(data)
+file.close()
+
+# 블럭 출력용 불러오기
+with open("grid_data.txt", "r") as grid_file:
+    gdata = grid_file.readlines()
+BLOCK_CNT, ORIGINAL_BLOCK_CNT = len(gdata), len(gdata)
+grid_file.close()
+
+
+
+
+
 # 개행 문자 제거
 for i in data:
     tmp_str = i.replace('\n', '\n')
-    grid_data.append(tmp_str)
+    monster_data.append(tmp_str)
+
+for i in gdata:
+    gtmp_str = i.replace('\n', '\n')
+    grid_data.append(gtmp_str)
 
 # BLOCK 구조체 생성, 붙여넣기.
+for i in range(MONSTER_CNT):
+    blocks.append(MONSTER())
+    blocks[i].left = int(monster_data[i][0:6]) # 중간에 | 들어감.
+    blocks[i].bottom = int(monster_data[i][7:13])
+    blocks[i].width = int(monster_data[i][14:18])
+    blocks[i].height = int(monster_data[i][19:23])
+    blocks[i].type = int(monster_data[i][24])
+
 for i in range(BLOCK_CNT):
-    blocks.append(BLOCK())
-    blocks[i].left = int(grid_data[i][0:6]) # 중간에 | 들어감.
-    blocks[i].bottom = int(grid_data[i][7:13])
-    blocks[i].width = int(grid_data[i][14:18])
-    blocks[i].height = int(grid_data[i][19:23])
-    blocks[i].type = int(grid_data[i][24])
+    grid_blocks.append(BLOCK())
+    grid_blocks[i].left = int(grid_data[i][0:6]) # 중간에 | 들어감.
+    grid_blocks[i].bottom = int(grid_data[i][7:13])
+    grid_blocks[i].width = int(grid_data[i][14:18])
+    grid_blocks[i].height = int(grid_data[i][19:23])
+    grid_blocks[i].type = int(grid_data[i][24])
 
 running = True
 left, bottom = 20, 20
@@ -74,7 +100,7 @@ def handle_events():
     global left, bottom
     global pxdir, pydir, mdir
     global draw_blue, blue_left, blue_bottom, blue_right, blue_top, blue_type
-    global BLOCK_CNT, blocks
+    global BLOCK_CNT, blocks, MONSTER_CNT
 
     events = get_events()
     for event in events:
@@ -111,7 +137,7 @@ def handle_events():
             # draw_blue를 켜고, 
             # 현재의 left, bottom 값을 다른 변수에 임시 저장.
 
-            elif event.key == SDLK_1: # 기본 블럭
+            elif event.key == SDLK_1: # Fly
                 if draw_blue == True:
                     draw_blue = False
                     return
@@ -119,7 +145,7 @@ def handle_events():
                 blue_left = left
                 blue_bottom = bottom
                 blue_type = 1
-            elif event.key == SDLK_2: # 함정
+            elif event.key == SDLK_2: # Tiktik
                 if draw_blue == True:
                     draw_blue = False
                     return
@@ -160,13 +186,13 @@ def handle_events():
                     blue_right = left + 40 - blue_left
                     blue_top = bottom + 40 - blue_bottom
                     blocks.append(BLOCK())
-                    blocks[BLOCK_CNT].left = blue_left
-                    blocks[BLOCK_CNT].bottom = blue_bottom
-                    blocks[BLOCK_CNT].width = blue_right
-                    blocks[BLOCK_CNT].height = blue_top
-                    blocks[BLOCK_CNT].type = blue_type
+                    blocks[MONSTER_CNT].left = blue_left
+                    blocks[MONSTER_CNT].bottom = blue_bottom
+                    blocks[MONSTER_CNT].width = blue_right
+                    blocks[MONSTER_CNT].height = blue_top
+                    blocks[MONSTER_CNT].type = blue_type
 
-                    BLOCK_CNT += 1
+                    MONSTER_CNT += 1
                 # 데이터 추가해주기
                 # 블럭에만 추가해주면 됨
 
@@ -227,7 +253,7 @@ def move_map():
 
 def move_block(dir):
     global blocks
-    global BLOCK_CNT
+    global MONSTER_CNT
     global shift_pressed
 
     move_value = 2
@@ -236,7 +262,7 @@ def move_block(dir):
     else:
         move_value = 1
 
-    for i in range(BLOCK_CNT):
+    for i in range(MONSTER_CNT):
         if dir == 1:
             blocks[i].bottom -= move_value * 2
             
@@ -248,6 +274,19 @@ def move_block(dir):
             
         elif dir == 4:
             blocks[i].left -= move_value * 2
+
+    for i in range(BLOCK_CNT):
+        if dir == 1:
+            grid_blocks[i].bottom -= move_value * 2
+            
+        elif dir == 2:
+            grid_blocks[i].bottom += move_value * 2
+            
+        elif dir == 3:
+            grid_blocks[i].left += move_value * 2
+            
+        elif dir == 4:
+            grid_blocks[i].left -= move_value * 2
            
 
 block_black = load_image('resources/black_rect.png')
@@ -267,7 +306,8 @@ while running:
 
     # 불러온 데이터만큼
     # 이미지 그리기
-    for i in range(BLOCK_CNT):
+    for i in range(MONSTER_CNT):
+        # 몬스터 draw
         if blocks[i].type == 1:
             block_blue.draw(blocks[i].left + (blocks[i].width // 2), blocks[i].bottom + (blocks[i].height // 2), blocks[i].width, blocks[i].height)
         elif blocks[i].type == 2:
@@ -276,6 +316,12 @@ while running:
             block_black.draw(blocks[i].left + (blocks[i].width // 2), blocks[i].bottom + (blocks[i].height // 2), blocks[i].width, blocks[i].height)
         
         draw_rectangle(blocks[i].left, blocks[i].bottom, blocks[i].left + blocks[i].width, blocks[i].bottom + blocks[i].height)
+        
+
+        # grid draw
+    for i in range(BLOCK_CNT):
+        draw_rectangle(grid_blocks[i].left, grid_blocks[i].bottom, grid_blocks[i].left + grid_blocks[i].width, grid_blocks[i].bottom + grid_blocks[i].height)
+
     
     if draw_blue:
         draw_rectangle(blue_left, blue_bottom, left + 40, bottom + 40)
@@ -296,11 +342,11 @@ while running:
 #     grid_data.
 
 # grid_data.append("\n")
-for i in range(ORIGINAL_BLOCK_CNT, BLOCK_CNT):
-    grid_data.append("%6d|%6d|%4d|%4d|%d\n" % (blocks[i].left + (map_x * 2), blocks[i].bottom + (map_y * 2), blocks[i].width, blocks[i].height, blocks[i].type))
+for i in range(ORIGINAL_MONSTER_CNT, MONSTER_CNT):
+    monster_data.append("%6d|%6d|%4d|%4d|%d\n" % (blocks[i].left + (map_x * 2), blocks[i].bottom + (map_y * 2), blocks[i].width, blocks[i].height, blocks[i].type))
 
-with open('grid_data.txt', 'w') as file:
-    file.writelines(grid_data)
+with open('monster_data.txt', 'w') as file:
+    file.writelines(monster_data)
 
 
 

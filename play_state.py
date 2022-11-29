@@ -6,10 +6,9 @@ from mj_values import *
 import numpy as np
 from check_col import collision_check
 from time import time
+from random import randint
 
 '''  '''
-
-
 
 class RECT:
     left: int
@@ -35,6 +34,11 @@ class MONSTER:
     right: int
     top: int
 
+    bleft: int
+    bbottom: int
+    bright: int
+    btop: int
+    
     width: int
     height: int
     type: str
@@ -44,18 +48,15 @@ class MONSTER:
     dir: int
         # idle / alert / attacking / hit by player / dying / dead
 
-class DIRT:
-    x: int
-    y: int
-    show: bool
-    count: int
-
 class HIT_EFFECT:
     x: int
     y: int
+    left: int
+    bottom: int
     show: bool
     count: int
     x_frame: int
+    dir: str
 
 
 # BLOCK 구조체 배열(리스트) 만들 예정. 
@@ -63,31 +64,39 @@ BLOCKS = []
 
 PLAYER_RECT = RECT()
 
-DIRT_EFFECT = []
-
-for i in range(0, 10):
-    DIRT_EFFECT.append(DIRT())
-    DIRT_EFFECT[i].x = 0
-    DIRT_EFFECT[i].y = 0
-    DIRT_EFFECT[i].show = 0
-    DIRT_EFFECT[i].count = 0
-
 MONSTERS = []
-MONSTERS.append(MONSTER())
-MONSTERS[0].x = 3000
-MONSTERS[0].y = 800
-MONSTERS[0].type = 'fly'
-MONSTERS[0].state = 'idle'
-MONSTERS[0].width = 150
-MONSTERS[0].height = 150
-MONSTERS[0].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + 3385
-MONSTERS[0].right = MONSTERS[0].left + MONSTERS[0].width
-MONSTERS[0].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 2500
-MONSTERS[0].top = MONSTERS[0].bottom + MONSTERS[0].height
-MONSTERS[0].count = 0
-MONSTERS[0].x_frame = 0
-MONSTERS[0].dir = -1
-MONSTERS[0].hp = 3
+
+# MONSTERS.append(MONSTER())
+# MONSTERS[0].x = 3000
+# MONSTERS[0].y = 800
+# MONSTERS[0].type = 'fly'
+# MONSTERS[0].state = 'idle'
+# MONSTERS[0].width = 150
+# MONSTERS[0].height = 150
+# MONSTERS[0].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + 3385
+# MONSTERS[0].right = MONSTERS[0].left + MONSTERS[0].width
+# MONSTERS[0].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 2500
+# MONSTERS[0].top = MONSTERS[0].bottom + MONSTERS[0].height
+# MONSTERS[0].count = 0
+# MONSTERS[0].x_frame = 0
+# MONSTERS[0].dir = -1
+# MONSTERS[0].hp = 3
+
+# MONSTERS.append(MONSTER())
+# MONSTERS[1].x = 3000
+# MONSTERS[1].y = 500
+# MONSTERS[1].type = 'tiktik'
+# MONSTERS[1].state = 'idle'
+# MONSTERS[1].width = 93
+# MONSTERS[1].height = 80
+# MONSTERS[1].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + 3385
+# MONSTERS[1].right = MONSTERS[1].left + MONSTERS[1].width
+# MONSTERS[1].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + 2500
+# MONSTERS[1].top = MONSTERS[1].bottom + MONSTERS[1].height
+# MONSTERS[1].count = 0
+# MONSTERS[1].x_frame = 0
+# MONSTERS[1].dir = 1
+# MONSTERS[1].hp = 3
 
 
 def load_block():
@@ -110,6 +119,45 @@ def load_block():
         BLOCKS[i].top = BLOCKS[i].bottom + int(grid_data[i][19:23])
         BLOCKS[i].type = int(grid_data[i][24])
 
+def load_monster():
+    global MONSTERS, MONSTER_CNT, monster_data
+
+    with open("monster_data.txt", "r") as file:
+        data = file.readlines()
+    file.close()
+
+    MONSTER_CNT = len(data)
+
+    for i in data:
+        tmp_str = i.replace('\n', '\n')
+        monster_data.append(tmp_str)
+
+    for i in range(MONSTER_CNT):
+        MONSTERS.append(MONSTER())
+        MONSTERS[i].x = int(monster_data[i][0:6])
+        MONSTERS[i].y = int(monster_data[i][7:13])
+        mtype = int(monster_data[i][24])
+        if mtype == 1: # fly
+            MONSTERS[i].width = 150
+            MONSTERS[i].height = 150
+            MONSTERS[i].type = 'fly'
+            MONSTERS[i].state = 'idle'
+            MONSTERS[i].hp = 3
+
+        elif mtype == 2: # tik
+            MONSTERS[i].width = 93
+            MONSTERS[i].height = 80
+            MONSTERS[i].type = 'tiktik'
+            MONSTERS[i].state = 'idle'
+            MONSTERS[i].hp = 3
+        
+        MONSTERS[i].count = 0
+        MONSTERS[i].x_frame = 0
+        MONSTERS[i].dir = -1
+
+        print(MONSTERS[i].type, MONSTERS[i].state, MONSTERS[i].hp, MONSTERS[i].dir)
+
+
 def blocks_init():
     global BLOCKS, block_x, block_y, MoveDistance, JumpHeight, BLOCK_CNT
     global X_MOVE_POWER, Y_MOVE_POWER
@@ -122,10 +170,12 @@ def blocks_init():
 
 def player_init():
     global PLAYER_RECT, PlayerMoveDistance, player_x, X_MOVE_POWER
+    global player_y, player_move_y, boss_stage_jump_value
+
     PLAYER_RECT.left = 640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) -25
-    PLAYER_RECT.bottom = 200 - 50
+    PLAYER_RECT.bottom = 200 + int(boss_stage_jump_value) - 50
     PLAYER_RECT.right = PLAYER_RECT.left + 50
-    PLAYER_RECT.top = 200 + 50
+    PLAYER_RECT.top = 200 + int(boss_stage_jump_value) + 50
 
 def monster_init():
     global MONSTERS, block_x, block_y, MoveDistance, JumpHeight
@@ -136,6 +186,19 @@ def monster_init():
         m.right = m.left + m.width
         m.bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + m.y
         m.top = m.bottom + m.height
+        if m.type == 'fly':
+            m.bleft = m.left + 30
+            m.bright = m.right - 30
+            m.bbottom = m.bottom + 30
+            m.btop = m.top - 30
+        else:
+            m.bleft = m.left
+            m.bright = m.right
+            m.bbottom = m.bottom
+            m.btop = m.top
+
+def effect_init():
+    pass
 
 def init_dark_images():
     global phun
@@ -150,9 +213,6 @@ def init_dark_images():
         phun.append(load_image('resources/menu/80.png'))
         phun.append(load_image('resources/menu/90.png'))
         phun.append(load_image('resources/menu/100.png'))
-
-
-pdc = 0
 
 def pdark_animation():
     global penable_dark, pdark_count, pdark_dir, pdark_anime_count, pdc
@@ -186,93 +246,114 @@ def pdraw_dark():
     if pdark_count >= 1:
         phun[pdark_count].draw_to_origin(0, 0, 1280, 720)
 
-
-# player JUMP
-# 
-
 def Jump():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime
     global JumpAgain, RemainJumpTimeCount
-    global y, block_y
+    global y, block_y, player_move_y
     global is_falling
-    global player_on_block_num
+    global player_on_block_num, StageNum, boss_stage_jump_value
 
     blocks_init()
 
     # space를 누르지 않으면, 종료
     if JumpKeyPressed == 0 and is_falling == 0:
         return
-
-    JumpHeight = (JumpTime * JumpTime - JumpPower * JumpTime) / 2.0
     
-    if RemainJumpTimeCount > 0:
-        RemainJumpTimeCount -= 4
-        if RemainJumpTimeCount <= 0:
-            JumpTime = 50 - JumpTime
-            RemainJumpTimeCount = 0
-    else:
-        JumpTime += 0.2
-
-    # 변곡점 --> JumpHeight = -312.5
-    if JumpHeight <= -312:
-        is_falling = True
-
-
-    # 점프 끝내는 조건문
-    ## 끝내야 할 때?
-    ##  1. 블럭 위에 도착했을 때
-    ##      -> is_falling 상태일 때만 활성화하기.
-    ##  2. 블럭 아래에 부딪혔을 때
-    
-    for i in range(BLOCK_CNT):
-        # 충돌 검사. BLOCK_CNT만큼
-        # 충돌했을 때, 위에 충돌했는지, 아래에 충돌했는지 판별 필요.
-        temp_rect = BLOCK()
-        temp_rect.left, temp_rect.right = BLOCKS[i].left, BLOCKS[i].right 
-        temp_rect.top, temp_rect.bottom = BLOCKS[i].top + 8, BLOCKS[i].top + 8
-        # top 원소 먼저 check, + 5 해주는 이유? -> 계속 충돌해있으면 안되기 때문, 원천 차단
+    if StageNum == 1:
+        JumpHeight = (JumpTime * JumpTime - JumpPower * JumpTime) / 2.0
         
-        if collision_check(temp_rect, PLAYER_RECT) and is_falling == True:
-            JumpTime = 0
-            y = y - JumpHeight
-            block_y = block_y + JumpHeight
+        if RemainJumpTimeCount > 0:
+            RemainJumpTimeCount -= 4
+            if RemainJumpTimeCount <= 0:
+                JumpTime = 50 - JumpTime
+                RemainJumpTimeCount = 0
+        else:
+            JumpTime += 0.2
 
-            JumpHeight = 0
-            JumpKeyPressed = False
-           
-
-            is_falling = False
-            player_on_block_num = i
-            
-            collision_repair(i)
-
-            JumpAgain = False
-            return
-
-        temp_rect.top, temp_rect.bottom = BLOCKS[i].bottom - 8, BLOCKS[i].bottom - 8
-        if collision_check(temp_rect, PLAYER_RECT) and is_falling == False:
-            # 바닥 충돌
-
-            collision_repair_bottom(i)
-
-            
-            # if JumpAgain:
-            #     JumpTime = 50 - JumpTime
-            # else:
-            #     JumpTime = 50 - JumpTime
-
-            RemainJumpTimeCount = (25 - JumpTime) / 0.2 + 0.1
-
-
-            JumpHeight = (JumpTime * JumpTime - JumpPower * JumpTime) / 2.0
-
-            # draw_rectangle(temp_rect.left, temp_rect.bottom - 1, temp_rect.right, temp_rect.top + 1)
-            update_canvas()
-            #print("bottom col")
-
+        # 변곡점 --> JumpHeight = -312.5
+        if JumpHeight <= -312:
             is_falling = True
 
-        pass
+
+        # 점프 끝내는 조건문
+        ## 끝내야 할 때?
+        ##  1. 블럭 위에 도착했을 때
+        ##      -> is_falling 상태일 때만 활성화하기.
+        ##  2. 블럭 아래에 부딪혔을 때
+        
+        for i in range(BLOCK_CNT):
+            # 충돌 검사. BLOCK_CNT만큼
+            # 충돌했을 때, 위에 충돌했는지, 아래에 충돌했는지 판별 필요.
+            temp_rect = BLOCK()
+            temp_rect.left, temp_rect.right = BLOCKS[i].left, BLOCKS[i].right 
+            temp_rect.top, temp_rect.bottom = BLOCKS[i].top + 8, BLOCKS[i].top + 8
+            # top 원소 먼저 check, + 5 해주는 이유? -> 계속 충돌해있으면 안되기 때문, 원천 차단
+            
+            if collision_check(temp_rect, PLAYER_RECT) and is_falling == True:
+                JumpTime = 0
+                y = y - JumpHeight
+                block_y = block_y + JumpHeight
+
+                JumpHeight = 0
+                JumpKeyPressed = False
+
+                is_falling = False
+                player_on_block_num = i
+                
+                collision_repair(i)
+
+                JumpAgain = False
+                return
+
+            temp_rect.top, temp_rect.bottom = BLOCKS[i].bottom - 8, BLOCKS[i].bottom - 8
+            if collision_check(temp_rect, PLAYER_RECT) and is_falling == False:
+                # 바닥 충돌
+
+                collision_repair_bottom(i)
+
+                
+                # if JumpAgain:
+                #     JumpTime = 50 - JumpTime
+                # else:
+                #     JumpTime = 50 - JumpTime
+
+                RemainJumpTimeCount = (25 - JumpTime) / 0.2 + 0.1
+
+                JumpHeight = (JumpTime * JumpTime - JumpPower * JumpTime) / 2.0
+
+                # draw_rectangle(temp_rect.left, temp_rect.bottom - 1, temp_rect.right, temp_rect.top + 1)
+                update_canvas()
+                #print("bottom col")
+
+                is_falling = True
+
+    elif StageNum == 2: # boss
+        boss_stage_jump_value = (JumpTime * JumpTime - JumpPower * JumpTime) / 2.0
+        JumpTime += 0.2
+
+        # 변곡점 --> JumpHeight = -312.5
+        if boss_stage_jump_value <= -312:
+            is_falling = True
+        
+        for i in range(BLOCK_CNT): # 위쪽 충돌
+            temp_rect = BLOCK()
+            temp_rect.left, temp_rect.right = BLOCKS[i].left, BLOCKS[i].right 
+            temp_rect.top, temp_rect.bottom = BLOCKS[i].top + 8, BLOCKS[i].top + 8
+
+            if collision_check(temp_rect, PLAYER_RECT) and is_falling == True:
+                JumpTime = 0
+                player_move_y -= boss_stage_jump_value
+
+                JumpKeyPressed = False
+                boss_stage_jump_value = 0
+                is_falling = False
+                player_on_block_num = i
+                
+                collision_repair(i)
+
+                JumpAgain = False
+                return
+
 
 def Move():
     global LeftKeyPressed, RightKeyPressed, MoveDistance, PlayerMoveDistance, MovePower, MoveTime, MoveCount, x, y
@@ -365,6 +446,7 @@ def Move():
                 if LeftKeyPressed == -1:
                     if player_x - PlayerMoveDistance < 920:
                         player_x -= PlayerMoveDistance
+                    
                 elif RightKeyPressed == -1:
                     player_x += PlayerMoveDistance
 
@@ -403,7 +485,6 @@ def Move():
             now_move_player_right = False
 
     else:
-
         MoveDistance = (MoveTime * MoveTime - MovePower * MoveTime) / MoveValue
 
         if (int(x - MoveDistance) // X_MOVE_POWER) <= 5:
@@ -492,7 +573,11 @@ def Attack():
                     PLAYER_RECT.left - 50 < m.left + 75 < PLAYER_RECT.left + 50 and \
                     PLAYER_RECT.bottom - 400 < m.bottom < PLAYER_RECT.bottom + 20:
                     m.state = 'hit'
+                    m.count = 0
+                    m.x_frame = 0
                     m.hp -= 1
+                    shake_hit_count = 6
+                    attack_effect(m.left + (m.width // 2), m.bottom + (m.height // 2), 'down')
 
         elif UpKeyPressed:
             if hero_heading_left:
@@ -506,7 +591,11 @@ def Attack():
                     PLAYER_RECT.left - 50 < m.left + 75 < PLAYER_RECT.left + 50 and \
                     PLAYER_RECT.bottom + 20 < m.bottom < PLAYER_RECT.bottom + 400:
                     m.state = 'hit'
+                    m.count = 0
+                    m.x_frame = 0
                     m.hp -= 1
+                    shake_hit_count = 6
+                    attack_effect(m.left + (m.width // 2), m.bottom, 'up')
             
 
         elif hero_heading_left:
@@ -517,10 +606,11 @@ def Attack():
                     PLAYER_RECT.left - 150 < m.left + 150 < PLAYER_RECT.left and \
                     PLAYER_RECT.bottom - 50 < m.bottom < PLAYER_RECT.bottom + 200:
                     m.state = 'hit'
+                    m.count = 0
+                    m.x_frame = 0
                     m.hp -= 1
                     shake_hit_count = 6
-                    attack_effect(m.left, m.bottom)
-
+                    attack_effect(m.right, m.bottom, 'right')
         
         else:
             attack_dir = 1
@@ -530,9 +620,11 @@ def Attack():
                     PLAYER_RECT.right < m.left < PLAYER_RECT.right + 150 and \
                     PLAYER_RECT.bottom - 50 < m.bottom < PLAYER_RECT.bottom + 200:
                     m.state = 'hit'
+                    m.count = 0
+                    m.x_frame = 0
                     m.hp -= 1
                     shake_hit_count = 6
-                    attack_effect(m.left, m.bottom)
+                    attack_effect(m.left, m.bottom, 'left')
     
     else: # 0이 아님! -> 공격중. count 올려주자
         if attack_anime_count > attack_anime_frame:
@@ -545,13 +637,7 @@ def Attack():
         else:
             attack_anime_count += 1
 
-# what monster need?
-#   1. position
-#   2. type <-- type에 따라서 Monster에서 
-#   3. state <-- str
-
-
-def attack_effect(x, y):
+def attack_effect(x, y, dir):
     global hit_effect
     l = len(hit_effect)
     hit_effect.append(HIT_EFFECT())
@@ -560,10 +646,11 @@ def attack_effect(x, y):
     hit_effect[l].show = True
     hit_effect[l].x_frame = 0
     hit_effect[l].count = 0
+    hit_effect[l].dir = dir
 
 def attack_effect_count():
     global hit_effect, hit_effect_image
-    if_del = []
+    del_cnt_list = []
 
     cnt = -1
     for a in hit_effect:
@@ -571,22 +658,44 @@ def attack_effect_count():
         if a.show:
             if a.count % 15 == 14:
                 if a.x_frame == 2:
-                    if_del.append(cnt)
+                    del_cnt_list.append(cnt)
                 else: a.x_frame += 1
             a.count += 1
-    del_attack_effect(if_del)
+    del_attack_effect(del_cnt_list)
 
-def del_attack_effect(n):
+def del_attack_effect(del_cnt_list):
     global hit_effect
-    for i in n:
-        del hit_effect[i]
+
+    for i in del_cnt_list:
+        try:
+            print('tyring, ', i, len(hit_effect))
+            del hit_effect[0]
+        except:
+            print('hit_effect error occured, ', i, len(hit_effect))
 
 def draw_attack_effect():
-    global hit_effect_image
+    global hit_effect_image, hit_effect
     for a in hit_effect:
         if a.show:
-            hit_effect_image.clip_draw_to_origin(hit_effect_image.w // 3 * a.x_frame, 0, hit_effect_image.w // 3, hit_effect_image.h,
+            if a.dir == 'left':
+                hit_effect_image.clip_draw_to_origin(hit_effect_image.w // 3 * a.x_frame, 0,
+                                                 hit_effect_image.w // 3, hit_effect_image.h,
                                                  a.x, a.y, hit_effect_image.w // 3, hit_effect_image.h)
+            if a.dir == 'right':
+                hit_effect_image.clip_composite_draw(hit_effect_image.w // 3 * a.x_frame, 0, 
+                                                 hit_effect_image.w // 3, hit_effect_image.h,
+                                                 0, 'h',
+                                                 a.x, a.y + (hit_effect_image.h // 2), hit_effect_image.w // 3, hit_effect_image.h)
+            if a.dir == 'up':
+                hit_effect_image.clip_composite_draw(hit_effect_image.w // 3 * a.x_frame, 0, 
+                                                 hit_effect_image.w // 3, hit_effect_image.h,
+                                                 0, 'v',
+                                                 a.x, a.y + (hit_effect_image.h // 2), hit_effect_image.w // 3, hit_effect_image.h)
+            if a.dir == 'down':
+                hit_effect_image.clip_composite_draw(hit_effect_image.w // 3 * a.x_frame, 0, 
+                                                 hit_effect_image.w // 3, hit_effect_image.h,
+                                                 0, 'hv',
+                                                 a.x, a.y + (hit_effect_image.h // 2), hit_effect_image.w // 3, hit_effect_image.h)
 
 def Fly():
     global MONSTERS
@@ -599,6 +708,7 @@ def Fly():
     #   반대 방향으로 바꾸기. (count 초기화)
     for m in MONSTERS:
         dataclass_num += 1
+
         if m.type == 'fly': # fly가 맞다면
             if m.state == 'idle':
                 change_state_alert(dataclass_num)
@@ -623,13 +733,12 @@ def Fly():
 
             elif m.state == 'alert': # chase anime
             
-                print(PLAYER_RECT.top, m.bottom)
                 if m.dir == -1: # 왼쪽 바라볼 때
                     if m.count > 250:
                         m.x -= 1
-                        if m.bottom + 10 > PLAYER_RECT.top:
+                        if m.bbottom + 10 > PLAYER_RECT.top:
                             m.y -= 0.5
-                        elif m.bottom + m.height - 10 < PLAYER_RECT.bottom:
+                        elif m.bbottom + (m.height - 60) - 10 < PLAYER_RECT.bottom:
                             m.y += 0.5
 
                     if PLAYER_RECT.right > m.left + m.width:
@@ -641,9 +750,9 @@ def Fly():
                 elif m.dir == 1:
                     if m.count > 250:
                         m.x += 1
-                        if m.bottom + 10 > PLAYER_RECT.top:
+                        if m.bbottom + 10 > PLAYER_RECT.top:
                             m.y -= 0.5
-                        elif m.bottom + m.height - 10 < PLAYER_RECT.bottom:
+                        elif m.bbottom + (m.height - 60) - 10 < PLAYER_RECT.bottom:
                             m.y += 0.5
 
                     if PLAYER_RECT.right < m.left:
@@ -676,13 +785,46 @@ def Fly():
             elif m.state == 'dead':
                 pass
 
-            m.count += 1
+            
+        elif m.type == 'tiktik':
+            if m.state == 'idle': # 블럭 따라 이동
+                if m.dir == 1:
+                    if m.count >= 600:
+                        m.count = 0
+                        m.dir *= -1
+                    else:
+                        m.x += 0.5
+                elif m.dir == -1:
+                    if m.count >= 600:
+                        m.count = 0
+                        m.dir *= -1
+                    else:
+                        m.x -= 0.5
 
-    #   플레이어 위치와 가까워지면, 
+            elif m.state == 'hit':
+                if m.hp <= 0: 
+                    m.count = 0
+                    m.x_frame = 0
+                    m.state = 'dying'
+
+                if m.count >= 120:
+                    m.count = 0
+                    m.x_frame = 0
+                    m.state = 'idle'
+                else: 
+                    m.count += 1
+
+            elif m.state == 'dying':
+                if m.count >= 30 * 5:
+                    m.state = 'dead'
+                else: 
+                    m.count += 1
+            elif m.state == 'dead':
+                pass
+
+        m.count += 1
+            
     monster_animation()
-    
-def Tiktik():
-    pass
 
 def change_state_alert(i):
     global MONSTERS, PLAYER_RECT
@@ -716,13 +858,26 @@ def monster_animation():
                 elif m.state == 'dying':
                     m.x_frame = (m.x_frame + 1) % 3
 
+        elif m.type == 'tiktik':
+            if m.count % 30 == 29:
+                if m.state == 'idle':
+                    m.x_frame = (m.x_frame + 1) % 4
+                elif m.state == 'hit':
+                    if not m.x_frame:
+                        m.x_frame = (m.x_frame + 1) % 2
+                elif m.state == 'dying':
+                    m.x_frame = (m.x_frame + 1) % 5
+
     monster_init()
 
 def intersect_hit_by_monster():
     global MONSTERS, PLAYER_RECT
     global player_state, x_frame, shake_countX
     for m in MONSTERS:
-        if collision_check(m, PLAYER_RECT) and player_state != 2 and (m.state == 'alert' or m.state == 'alert_turn' or m.state == 'idle' or m.state == 'turn'): # 맞고 더블로 맞지 않게
+        if m.btop > PLAYER_RECT.bottom and PLAYER_RECT.top > m.bbottom and m.bleft < PLAYER_RECT.right and PLAYER_RECT.left < m.bright \
+          and player_state != 2 \
+          and (m.state == 'alert' or m.state == 'alert_turn' or m.state == 'idle' or m.state == 'turn'): # 맞고 더블로 맞지 않게
+
             stop_screen(200)
             player_state = 2
             break_hp(player_hp)
@@ -760,6 +915,7 @@ def handle_events():
     global hero_heading_right, hero_heading_left, x_frame
     global UpKeyPressed, DownKeyPressed, player_state
     global shake_countY, shake_countX
+    global StageNum, player_move_y, boss_stage_jump_value
 
     events = get_events()
     for event in events:
@@ -768,18 +924,33 @@ def handle_events():
 
         elif event.type == SDL_KEYDOWN:
             if event.key == SDLK_SPACE:
-                if (JumpKeyPressed == False):
-                    JumpKeyPressed = True
-                    player_on_block_num = -1
-                elif (JumpKeyPressed == True and JumpAgain == False):
-                    JumpAgain = True
-                    is_falling = False
-                    y = y - JumpHeight
-                    block_y = block_y + JumpHeight
-                    JumpHeight = 0
-                    JumpTime = 0.0
-                    player_on_block_num = -1
-                    blocks_init()
+                if StageNum == 1:
+                    if (JumpKeyPressed == False):
+                        JumpKeyPressed = True
+                        player_on_block_num = -1
+                    elif (JumpKeyPressed == True and JumpAgain == False):
+                        JumpAgain = True
+                        is_falling = False
+                        y = y - JumpHeight
+                        block_y = block_y + JumpHeight
+                        JumpHeight = 0
+                        JumpTime = 0.0
+                        player_on_block_num = -1
+                        blocks_init()
+
+                elif StageNum == 2:
+                    if (JumpKeyPressed == False):
+                        JumpKeyPressed = True
+                        player_on_block_num = -1
+
+                    elif (JumpKeyPressed == True and JumpAgain == False):
+                        JumpAgain = True
+                        is_falling = False
+                        player_move_y -= boss_stage_jump_value
+                        JumpTime = 0
+                        boss_stage_jump_value = 0
+                        player_on_block_num = -1
+                        blocks_init()
 
             elif event.key == SDLK_LEFT:
                 LeftKeyPressed, hero_heading_left = 1, True
@@ -808,21 +979,24 @@ def handle_events():
                     show_blocks = True
                 else:
                     show_blocks = False
-
+            elif event.key == SDLK_2:
+                StageNum = 2
+            elif event.key == SDLK_1:
+                StageNum = 1
 
 # ----------------------- shake test ---------------------------
 
-            elif event.key == SDLK_h:
-                if shake_countY == 0: shake_countY = 6
+            # elif event.key == SDLK_h:
+            #     if shake_countY == 0: shake_countY = 6
 
-            elif event.key == SDLK_y:
-                if shake_countY == 0: shake_countY = -6
+            # elif event.key == SDLK_y:
+            #     if shake_countY == 0: shake_countY = -6
 
-            elif event.key == SDLK_k:
-                if shake_countX == 0: shake_countX = 6
+            # elif event.key == SDLK_k:
+            #     if shake_countX == 0: shake_countX = 6
 
-            elif event.key == SDLK_i:
-                if shake_countX == 0: shake_countX = -6
+            # elif event.key == SDLK_i:
+            #     if shake_countX == 0: shake_countX = -6
             
 
             # elif event.key == SDLK_j:
@@ -843,9 +1017,6 @@ def handle_events():
                 DownKeyPressed = False
             elif event.key == SDLK_UP:
                 UpKeyPressed = False
-
-        # elif event.type == SDL_MOUSEBUTTONDOWN:
-        #     if event.button == SDL_BUTTON_LEFT:
 
 def collision_repair(i):
     global y, block_y, BLOCKS, PLAYER_RECT
@@ -939,7 +1110,6 @@ def shake_screen(xvalue, yvalue):
     x += xvalue * 2
     player_x += xvalue
 
-
 def shake_anime_count():
     global shake_countY, shake_countX, shake_hit_count
 
@@ -1023,7 +1193,7 @@ def animation_count(): # 16 x 16
             y_frame = 7
             if attack_anime_count % 10 == 0:
                 x_frame += 1
-    
+
 
     elif count == 30:
         if hp_x_frame == 2:
@@ -1073,22 +1243,26 @@ def animation_count(): # 16 x 16
                     x_frame = 7
         
         elif hero_heading_right: # 0 1 2 3 4 5 6 7 8
-            y_frame = 15
+                
             if RightKeyPressed != 0: # moving, right
+                y_frame = 15
                 x_frame = (x_frame + 1) % 9
             else: # idle, right
+                y_frame = 15
                 x_frame = 0
             
         elif hero_heading_left: # 14 13 12 11 10 9 8 7 6
                                 # x_frame은 왼쪽으로 전환할 때 초기화
-            y_frame = 15
+            
             if LeftKeyPressed != 0: # moving, left
+                y_frame = 15
                 x_frame -= 1
                 if (7 <= x_frame and x_frame <= 15) == False:
                     x_frame = 15
                 if x_frame == 6:
                     x_frame = 15
             else: # idle, left
+                y_frame = 15
                 x_frame = 15
 
         count = 0
@@ -1096,6 +1270,7 @@ def animation_count(): # 16 x 16
 def init_image():
     global white_rect, hero_right, hero_left, ex_map, ex_block
     global fly_idle, fly_chase, fly_die, fly_turn_left, fly_shock
+    global tiktik_idle, tiktik_dying, tiktik_stun
     global hp_o, hp_x, hit_effect_image, hp_breaking
     global hero_right_hit, hero_left_hit
 
@@ -1115,25 +1290,21 @@ def init_image():
     fly_die = load_image('resources/monsters/fly_die.png')
     fly_turn_left = load_image('resources/monsters/fly_turn_left.png')
 
+    tiktik_idle = load_image('resources/monsters/tiktik_walk_right.png')
+    tiktik_stun = load_image('resources/monsters/tiktik_stun_right.png')
+    tiktik_dying = load_image('resources/monsters/tiktik_dying_right.png')
+
     hp_o = load_image('resources/hp_o.png')
     hp_x = load_image('resources/hp_x.png')
     hp_breaking = load_image('resources/hp_breaking.png')
     hit_effect_image = load_image('resources/hit_effect_left.png')
 
-
-
-# dirt_image = load_image('resources/monsters/dirt.png')
-
-x_frame = 0
-y_frame = 15
-count = 0
-
 def draw_player():
     # hero? 128x128
-        # 캐릭터 크기 100이 딱 맞는듯
+        # 캐릭터 크기 100
     global player_state, attack_dir, x_frame, y_frame, player_x, PlayerMoveDistance, player_y
     global X_MOVE_POWER, hero_right, hero_left, hero_heading_right, hero_heading_left
-
+    global boss_stage_jump_value
 
     if player_state == 1: # Attack
         
@@ -1165,10 +1336,10 @@ def draw_player():
     elif player_state == 0: # idle 상태라면, 
         if hero_heading_right == 1:
             hero_right.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
-            640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 + player_y, 100, 100)
+            640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 - boss_stage_jump_value + player_y, 100, 100)
         elif hero_heading_left == 1:
             hero_left.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
-            640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 + player_y, 100, 100)
+            640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 - boss_stage_jump_value + player_y, 100, 100)
 
     elif player_state == 2: # hit by monsters
         if hero_heading_right == 1:
@@ -1181,9 +1352,10 @@ def draw_player():
 def draw_monster():
     global MONSTERS
     global fly_chase, fly_die, fly_turn_left, fly_idle, fly_shock
+    global tiktik_idle, tiktik_dying, tiktik_stun
 
     for m in MONSTERS:
-        # draw_rectangle(int(m.left), int(m.bottom), int(m.left) + m.width, int(m.bottom) + m.height)
+        draw_rectangle(int(m.bleft), int(m.bbottom), int(m.bright), int(m.btop))
         if m.type == 'fly':
 
             if m.state == 'idle':
@@ -1213,6 +1385,31 @@ def draw_monster():
                 if m.dir == -1: fly_die.clip_draw(fly_die.w // 3 * m.x_frame, 0, fly_die.w // 3, fly_die.h,
                             int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
                 elif m.dir == 1: fly_die.clip_composite_draw(fly_die.w // 3 * m.x_frame, 0, fly_die.w // 3, fly_die.h, 0, 'h',
+                            int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+
+        elif m.type == 'tiktik':
+            if m.state == 'idle': # 4 frame
+                if m.dir == 1:
+                    tiktik_idle.clip_draw(tiktik_idle.w // 4 * m.x_frame, 0, tiktik_idle.w // 4, tiktik_idle.h,
+                            int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+                if m.dir == -1: 
+                    tiktik_idle.clip_composite_draw(tiktik_idle.w // 4 * m.x_frame, 0, tiktik_idle.w // 4, tiktik_idle.h, 0, 'h',
+                            int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+
+            elif m.state == 'hit': # 2 frame
+                if m.dir == 1:
+                    tiktik_stun.clip_draw(tiktik_stun.w // 2 * m.x_frame, 0, tiktik_stun.w // 2, tiktik_stun.h,
+                            int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+                if m.dir == -1:
+                    tiktik_stun.clip_composite_draw(tiktik_stun.w // 2 * m.x_frame, 0, tiktik_stun.w // 2, tiktik_stun.h, 0, 'h',
+                            int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+
+            elif m.state == 'dying': # 5 frame
+                if m.dir == 1:
+                    tiktik_dying.clip_draw(tiktik_dying.w // 5 * m.x_frame, 0, tiktik_dying.w // 5, tiktik_dying.h,
+                            int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+                if m.dir == -1:
+                    tiktik_dying.clip_composite_draw(tiktik_dying.w // 5 * m.x_frame, 0, tiktik_dying.w // 5, tiktik_dying.h, 0, 'h',
                             int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
                 
 def draw_hp():
@@ -1244,14 +1441,17 @@ def draw_breaking_hp():
         hp_breaking.clip_draw_to_origin(hp_breaking.w // 4 * hp_x_frame, 0, hp_breaking.w // 4, hp_breaking.h,
                                         35 * (hp_to_break) + 47, 605, 35, 65)
 
-
-
 def Game_State():
     init_image()
 
     load_block()
+    load_monster()
+
     blocks_init()
+    monster_init()
+    
     player_init()
+    effect_init()
     Fly()
     animation_count()
     init_dark_images()
@@ -1287,6 +1487,7 @@ def Game_State():
 
             blocks_init()
             player_init()
+            effect_init()
 
             attack_effect_count()
             animation_count()
