@@ -122,7 +122,7 @@ def load_monster():
         MONSTERS[i].x_frame = 0
         MONSTERS[i].dir = -1
 
-        print(MONSTERS[i].type, MONSTERS[i].state, MONSTERS[i].hp, MONSTERS[i].dir)
+        # print(MONSTERS[i].type, MONSTERS[i].state, MONSTERS[i].hp, MONSTERS[i].dir)
 
 def blocks_init():
     global BLOCKS, block_x, block_y, MoveDistance, JumpHeight, BLOCK_CNT
@@ -189,11 +189,10 @@ def pdark_animation():
             if pdark_dir == 1:
                 if pdark_count == 9:
                     pdark_dir *= -1
-                    pdark_anime_count = 0
-                    penable_dark = False
+                    pdark_anime_count = 9
                     pdc = 0
                     if player_state == 3:
-                        player_state = 0
+                        player_resurrection()
                 else:
                     pdark_count += 1
 
@@ -205,12 +204,55 @@ def pdark_animation():
                     pdc = 0
                 else:
                     pdark_count -= 1
-                
+
 def pdraw_dark():
     global phun, pdark_count, penable_dark
 
     if pdark_count >= 1:
         phun[pdark_count].draw_to_origin(0, 0, 1280, 720)
+
+def player_resurrection():
+    global player_state, x, y, block_x, block_y
+    global diameter, now_move_player_left, now_move_player_right, player_on_block_num, entire_move_count
+    global player_x, player_y, player_move_y, x_frame, y_frame, count
+    global JumpHeight, JumpTime, RemainJumpTimeCount, JumpKeyPressed, is_falling, JumpAgain
+    global PLAYER_START_X, PLAYER_START_Y, START_BLOCK_X, START_BLOCK_Y
+    global player_full_hp, player_hp
+
+    player_state = 0
+    x = PLAYER_START_X
+    y = PLAYER_START_Y # 시작점
+
+    block_x = START_BLOCK_X
+    block_y = START_BLOCK_Y # 시작점의 역수로 잡아야 블럭의 위치가 잡힘
+
+    diameter = 20.0
+
+    now_move_player_left = False
+    now_move_player_right = False
+
+    player_on_block_num = -1
+
+    entire_move_count = 0
+
+    player_x = 0
+    player_y = 0 # <--- y 변화량만. (아래 바라보거나 / 화면 흔들리는 이펙트)
+    player_move_y = 0 # 보스 스테이지에서 수정하는 값
+
+    x_frame = 0
+    y_frame = 15
+    count = 0
+
+    JumpHeight = 0
+    JumpTime = JumpPower // 2 + 1.0
+
+    RemainJumpTimeCount = 0
+
+    JumpKeyPressed = True
+    is_falling = True
+    JumpAgain = True
+
+    player_hp = player_full_hp
 
 def Jump():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime
@@ -289,7 +331,6 @@ def Jump():
 
                 # draw_rectangle(temp_rect.left, temp_rect.bottom - 1, temp_rect.right, temp_rect.top + 1)
                 update_canvas()
-                #print("bottom col")
 
                 is_falling = True
 
@@ -326,17 +367,23 @@ def Move():
     global JumpTime, JumpKeyPressed, player_on_block_num, is_falling, JumpHeight, JumpPower
     global can_climb_left, can_climb_right
     global entire_move_count
-    global DashCount
+    global DashCount, DashCoolTime
     # Distance에 상한을 정하고, 최대 속력을 맞추기
 
     MoveValue = 600.0
     MoveCountLimit = 100
     MoveTimeChange = 0.1
+
     if DashCount > 0:
         MovePower = 1000.0
         DashCount -= 1
+        if DashCount <= 0: 
+            DashCoolTime = 150
     else:
         MovePower = 200.0
+
+    if DashCoolTime >= 1:
+        DashCoolTime -= 1
 
     # 둘 다 누른 상태가 아니거나, 둘 다 눌렀다가 뗸 상태도 아니면, 바로 종료하기
     if LeftKeyPressed == 0 and RightKeyPressed == 0 and MoveCount == 0:
@@ -386,7 +433,6 @@ def Move():
                 is_falling = True
                 y = y - 312.48
                 block_y = block_y + 312.48
-                print("falling")
                 pass
 
 
@@ -641,7 +687,6 @@ def del_attack_effect(del_cnt_list):
 
     for i in del_cnt_list:
         try:
-            print('tyring, ', i, len(hit_effect))
             del hit_effect[0]
         except:
             print('hit_effect error occured, ', i, len(hit_effect))
@@ -865,13 +910,14 @@ def hit_god_count():
             player_state = 0
             hit_count = 0
 
-def stop_screen(t, die=False):
+def stop_screen(t):
     global stop_count, if_stop_screen, stop_count_limit
     if_stop_screen = True
     stop_count_limit = t
 
 def stop_screen_count():
     global stop_count, if_stop_screen, stop_count_limit
+    global player_state, penable_dark
 
     if stop_count_limit > 0:
         stop_count += 1
@@ -879,6 +925,8 @@ def stop_screen_count():
             stop_count = 0
             if_stop_screen = False
             stop_count_limit = 0
+            if player_state == 3:
+                penable_dark = True
 
 def handle_events():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime, player_on_block_num, is_falling
@@ -890,7 +938,7 @@ def handle_events():
     global UpKeyPressed, DownKeyPressed, player_state
     global shake_countY, shake_countX
     global StageNum, player_move_y, boss_stage_jump_value
-    global DashCount
+    global DashCount, PlayDashAnime, DashCoolTime
 
     events = get_events()
     for event in events:
@@ -956,7 +1004,11 @@ def handle_events():
                     show_blocks = False
 
             elif event.key == SDLK_LSHIFT:
-                DashCount = 30
+                if DashCoolTime <= 0:
+                    DashCount = 33
+                    if MoveCount > 60:
+                        PlayDashAnime = True
+
             elif event.key == SDLK_2:
                 StageNum = 2
             elif event.key == SDLK_1:
@@ -1004,7 +1056,6 @@ def collision_repair(i):
         y += 5
         block_y -= 5
         collision_repair(i)
-        print("did")
     else:
         return
 
@@ -1016,7 +1067,6 @@ def collision_repair_bottom(i):
         y -= 5
         block_y += 5
         collision_repair_bottom(i)
-        print("did_bottom")
     else:
         return
 
@@ -1038,7 +1088,6 @@ def collision_repair_left(i):
         else:
             x -= 1
             block_x += 1
-        print("did left")
         collision_repair_left(i)
     else:
         return
@@ -1060,7 +1109,6 @@ def collision_repair_right(i):
         else:
             x += 1
             block_x -= 1
-        print("did right")
         collision_repair_right(i)
     else:
         return
@@ -1146,7 +1194,7 @@ def animation_count(): # 16 x 16
     global count, x_frame, y_frame, player_state, hero_heading_left, hero_heading_right
     global LeftKeyPressed, RightKeyPressed, is_falling
     global attack_anime_count, attack_dir
-    global hp_x_frame, hp_to_break
+    global hp_x_frame, hp_to_break, DashCount
 
     count += 1
 
@@ -1171,7 +1219,6 @@ def animation_count(): # 16 x 16
             y_frame = 7
             if attack_anime_count % 10 == 0:
                 x_frame += 1
-
 
     elif count == 30:
         if hp_x_frame == 2:
@@ -1251,6 +1298,7 @@ def init_image():
     global tiktik_idle, tiktik_dying, tiktik_stun
     global hp_o, hp_x, hit_effect_image, hp_breaking
     global hero_right_hit, hero_left_hit
+    global hero_left_40, hero_left_70, hero_right_40, hero_right_70
 
     white_rect = load_image('resources/white_rect.png')
     hero_right = load_image('resources/knight_hero_right.png')
@@ -1258,6 +1306,12 @@ def init_image():
 
     hero_right_hit = load_image('resources/knight_hero_right_hit.png')
     hero_left_hit = load_image('resources/knight_hero_left_hit.png')
+
+    hero_left_40 = load_image('resources/knight_hero_left_40.png')
+    hero_left_70 = load_image('resources/knight_hero_left_70.png')
+
+    hero_right_40 = load_image('resources/knight_hero_right_40.png')
+    hero_right_70 = load_image('resources/knight_hero_right_70.png')
 
     ex_map = load_image('resources/map_ex.png')
     ex_block = load_image('resources/first_map.png')
@@ -1282,10 +1336,12 @@ def draw_player():
         # 캐릭터 크기 100
     global player_state, attack_dir, x_frame, y_frame, player_x, PlayerMoveDistance, player_y
     global X_MOVE_POWER, hero_right, hero_left, hero_heading_right, hero_heading_left
-    global boss_stage_jump_value
+    global boss_stage_jump_value, PlayDashAnime, DashCount
+    global hero_left_40, hero_left_70, hero_right_40, hero_right_70
 
     if player_state == 1: # Attack
         
+        # 플레이어
         if attack_dir == 2 or attack_dir == -2 or attack_dir == 1: # up
             hero_right.clip_draw(128 * x_frame, 128 * y_frame, 128, 128,   # right로 통일.
             640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 + player_y, 100, 100)
@@ -1293,8 +1349,8 @@ def draw_player():
             hero_left.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
             640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 + player_y, 100, 100)
 
-
         # x_frame 6개. # 3, 13
+        # 검기
         if attack_dir == 2: # up
             hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 70, '',   # right로 통일.
             640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) + 20, 200 + 75 + player_y, 150, 150)
@@ -1310,6 +1366,79 @@ def draw_player():
         elif attack_dir == -2: # down
             hero_right.clip_composite_draw(128 * 13, 128 * 3, 128, 128, 325, '',
             640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 - 75 + player_y, 150, 150)
+
+    elif PlayDashAnime:
+        y_frame = 11
+        if hero_heading_right == 1:
+            if DashCount <= 0:
+                PlayDashAnime = False
+            elif 0 < DashCount < 3:
+                x_frame = 0
+            elif 3 <= DashCount < 6:
+                x_frame = 1
+            elif 6 <= DashCount < 9:
+                x_frame = 2
+            elif 9 <= DashCount < 12:
+                x_frame = 3
+            elif 12 <= DashCount < 15:
+                x_frame = 4
+            elif 15 <= DashCount < 18:
+                x_frame = 5
+            elif 18 <= DashCount < 21:
+                x_frame = 4
+            elif 21 <= DashCount < 24:
+                x_frame = 3
+            elif 24 <= DashCount < 27:
+                x_frame = 2
+            elif 27 <= DashCount < 30:
+                x_frame = 1
+            elif 30 <= DashCount < 33:
+                x_frame = 0
+
+
+            hero_right_40.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
+            640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) - 16, 200 + player_y, 100, 100)
+
+            hero_right_70.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
+            640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) - 8, 200 + player_y, 100, 100)
+
+            hero_right.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
+            640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 + player_y, 100, 100)
+
+        elif hero_heading_left == 1:
+            if DashCount <= 0:
+                PlayDashAnime = False
+            elif 0 < DashCount < 3:
+                x_frame = 15
+            elif 3 <= DashCount < 6:
+                x_frame = 14
+            elif 6 <= DashCount < 9:
+                x_frame = 13
+            elif 9 <= DashCount < 12:
+                x_frame = 12
+            elif 12 <= DashCount < 15:
+                x_frame = 11
+            elif 15 <= DashCount < 18:
+                x_frame = 10
+            elif 18 <= DashCount < 21:
+                x_frame = 11
+            elif 21 <= DashCount < 24:
+                x_frame = 12
+            elif 24 <= DashCount < 27:
+                x_frame = 13
+            elif 27 <= DashCount < 30:
+                x_frame = 14
+            elif 30 <= DashCount < 33:
+                x_frame = 15
+
+            hero_left_40.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
+            640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) + 16, 200 + player_y, 100, 100)
+
+            hero_left_70.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
+            640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)) + 8, 200 + player_y, 100, 100)
+
+            hero_left.clip_draw(128 * x_frame, 128 * y_frame, 128, 128, 
+            640 - (int(player_x - PlayerMoveDistance) // (X_MOVE_POWER / 2)), 200 + player_y, 100, 100)
 
     elif player_state == 0: # idle 상태라면, 
         if hero_heading_right == 1:
@@ -1401,12 +1530,10 @@ def draw_hp():
 
 def break_hp(hp):
     global hp_to_break, player_hp, player_state, hp_x_frame
-    global penable_dark
     
     if player_hp - 1 <= 0:
         player_state = 3
-        stop_screen(150)
-        penable_dark = True
+        stop_screen(300)
         return
     
     hp_to_break = hp

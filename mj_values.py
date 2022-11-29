@@ -5,17 +5,22 @@ running = False
 X_MOVE_POWER = 3
 Y_MOVE_POWER = 3
 
+PLAYER_START_X = 0.0
+PLAYER_START_Y = 3000.0
+START_BLOCK_X = 0.0
+START_BLOCK_Y = -3000.0
+
 stop_count = 0
 if_stop_screen = False
 stop_count_limit = 0
 
 BLOCK_CNT = 0
 
-x = 0.0
-y = 3000.0 # 시작점
+x = PLAYER_START_X
+y = PLAYER_START_Y # 시작점
 
-block_x = 0.0
-block_y = -3000.0 # 시작점의 역수로 잡아야 블럭의 위치가 잡힘
+block_x = START_BLOCK_X
+block_y = START_BLOCK_Y # 시작점의 역수로 잡아야 블럭의 위치가 잡힘
 
 diameter = 20.0
 
@@ -50,6 +55,7 @@ JumpAgain = True
 MONSTER_CNT, monster_data = 0, []
 
 black_rect, white_rect, hero_right, hero_left, ex_map, ex_block = None, None, None, None, None, None
+hero_left_70, hero_left_40, hero_right_70, hero_right_40 = None, None, None, None
 fly_idle, fly_chase, fly_die, fly_turn_left, fly_shock = None, None, None, None, None
 tiktik_idle, tiktik_dying, tiktik_stun = None, None, None
 
@@ -78,6 +84,8 @@ UpKeyPressed, DownKeyPressed = 0, 0
 MoveCount = 0
 
 DashCount = 0
+PlayDashAnime = False
+DashCoolTime = False
 
 can_climb_left = False
 can_climb_right = False
@@ -91,8 +99,7 @@ player_state = 0
 # 0 : idle, jump, move
 # 1 : attack
 # 2 : getting hit
-# 3 : dying
-# 4 : dead
+# 3 : die
 
 attack_anime_frame = 55
 attack_dir = 0
