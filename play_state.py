@@ -115,6 +115,7 @@ BLOCKS = []
 PLAYER_RECT = RECT()
 
 MONSTERS = []
+MONSTERS_ORIGINAL_POS = []
 
 def load_block():
     global BLOCKS, BLOCK_CNT, grid_data
@@ -149,37 +150,52 @@ def load_monster():
         tmp_str = i.replace('\n', '\n')
         monster_data.append(tmp_str)
 
-    for i in range(MONSTER_CNT):
-        mtype = int(monster_data[i][24])
-        if mtype == 4: # Elder Hu
-            pass
+    for M in (MONSTERS, MONSTERS_ORIGINAL_POS):
+        for i in range(MONSTER_CNT):
+            mtype = int(monster_data[i][24])
+            if mtype == 4: # Elder Hu
+                pass
 
-        MONSTERS.append(MONSTER())
-        MONSTERS[i].x = int(monster_data[i][0:6])
-        MONSTERS[i].y = int(monster_data[i][7:13])
-        
-        if mtype == 1: # fly
-            MONSTERS[i].width = 150
-            MONSTERS[i].height = 150
-            MONSTERS[i].type = 'fly'
-            MONSTERS[i].state = 'idle'
-            MONSTERS[i].hp = 3
+            M.append(MONSTER())
+            M[i].x = int(monster_data[i][0:6])
+            M[i].y = int(monster_data[i][7:13])
+            
+            if mtype == 1: # fly
+                M[i].width = 150
+                M[i].height = 150
+                M[i].type = 'fly'
+                M[i].state = 'idle'
+                M[i].hp = 3
 
-        elif mtype == 2: # tik
-            MONSTERS[i].width = 93
-            MONSTERS[i].height = 80
-            MONSTERS[i].type = 'tiktik'
-            MONSTERS[i].state = 'idle'
-            MONSTERS[i].hp = 3
-        
-        MONSTERS[i].count = 0
-        MONSTERS[i].x_frame = 0
-        if randint(0, 1):
-            MONSTERS[i].dir = -1
-        else:
-            MONSTERS[i].dir = 1
-        if MONSTERS[i].dir != -1 and MONSTERS[i].dir != 1: # -1도 아니고 1도 아니면
-            print(f'{i}th monster dir error')
+            elif mtype == 2: # tik
+                M[i].width = 93
+                M[i].height = 80
+                M[i].type = 'tiktik'
+                M[i].state = 'idle'
+                M[i].hp = 3
+
+            elif mtype == 3: # thorn block
+                M[i].width = int(monster_data[i][14:18])
+                M[i].height = int(monster_data[i][19:23])
+                M[i].type = 'thorn'
+                M[i].state = 'thorn'
+                M[i].hp = 999
+
+            elif mtype == 4: # teleport block
+                M[i].width = int(monster_data[i][14:18])
+                M[i].height = int(monster_data[i][19:23])
+                M[i].type = 'teleport'
+                M[i].state = 'teleport'
+                M[i].hp = 999
+            
+            M[i].count = 0
+            M[i].x_frame = 0
+            if randint(0, 1):
+                M[i].dir = -1
+            else:
+                M[i].dir = 1
+            if M[i].dir != -1 and M[i].dir != 1: # -1도 아니고 1도 아니면
+                print(f'{i}th monster dir error')
 
 def blocks_init():
     global BLOCKS, block_x, block_y, MoveDistance, JumpHeight, BLOCK_CNT
@@ -234,9 +250,12 @@ def init_dark_images():
         phun.append(load_image('resources/menu/90.png'))
         phun.append(load_image('resources/menu/100.png'))
 
+    global play_font
+    play_font = load_font('resources/fonts/HeirofLightRegular.ttf', 30)
+
 def pdark_animation():
     global penable_dark, pdark_count, pdark_dir, pdark_anime_count, pdc
-    global player_state
+    global player_state, teleport_type
 
     if penable_dark:
         pdark_anime_count += 1
@@ -249,7 +268,7 @@ def pdark_animation():
                     pdark_anime_count = 9
                     pdc = 0
                     if player_state == 3:
-                        player_resurrection()
+                        player_resurrection(teleport_type)
                 else:
                     pdark_count += 1
 
@@ -268,20 +287,32 @@ def pdraw_dark():
     if pdark_count >= 1:
         phun[pdark_count].draw_to_origin(0, 0, 1280, 720)
 
-def player_resurrection():
+def player_resurrection(dest = 'start'):
     global player_state, x, y, block_x, block_y
     global diameter, now_move_player_left, now_move_player_right, player_on_block_num, entire_move_count
     global player_x, player_y, player_move_y, x_frame, y_frame, count
     global JumpHeight, JumpTime, RemainJumpTimeCount, JumpKeyPressed, is_falling, JumpAgain
     global PLAYER_START_X, PLAYER_START_Y, START_BLOCK_X, START_BLOCK_Y
     global player_full_hp, player_hp
+    global MONSTERS, MONSTERS_ORIGINAL_POS
 
     player_state = 0
-    x = PLAYER_START_X
-    y = PLAYER_START_Y # 시작점
 
-    block_x = START_BLOCK_X
-    block_y = START_BLOCK_Y # 시작점의 역수로 잡아야 블럭의 위치가 잡힘
+    if dest == 'start':
+        player_hp = player_full_hp
+        x = PLAYER_START_X
+        y = PLAYER_START_Y # 시작점
+
+        block_x = START_BLOCK_X
+        block_y = START_BLOCK_Y # 시작점의 역수로 잡아야 블럭의 위치가 잡힘
+
+    elif dest == 'boss':
+        x = 9350.0
+        y = 5950.0 # 시작점
+
+        block_x = -x
+        block_y = -y # 시작점의 역수로 잡아야 블럭의 위치가 잡힘
+
 
     diameter = 20.0
 
@@ -309,7 +340,22 @@ def player_resurrection():
     is_falling = True
     JumpAgain = True
 
-    player_hp = player_full_hp
+    for i in range(MONSTER_CNT):
+        MONSTERS[i].x = MONSTERS_ORIGINAL_POS[i].x
+        MONSTERS[i].y = MONSTERS_ORIGINAL_POS[i].y
+        MONSTERS[i].width = MONSTERS_ORIGINAL_POS[i].width
+        MONSTERS[i].height = MONSTERS_ORIGINAL_POS[i].height
+        MONSTERS[i].type = MONSTERS_ORIGINAL_POS[i].type
+        MONSTERS[i].state = MONSTERS_ORIGINAL_POS[i].state
+        MONSTERS[i].hp = MONSTERS_ORIGINAL_POS[i].hp
+
+        MONSTERS[i].count = 0
+        MONSTERS[i].x_frame = 0
+
+        if randint(0, 1):
+            MONSTERS[i].dir = -1
+        else:
+            MONSTERS[i].dir = 1
 
 def Jump():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime
@@ -735,7 +781,7 @@ def update_effect():
     for l in range(len(hit_effect)):
         hit_effect[l].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + hit_effect[l].x
         hit_effect[l].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + hit_effect[l].y
-    
+
 def attack_effect_count():
     global hit_effect, hit_effect_image
     del_cnt_list = []
@@ -916,6 +962,8 @@ def Fly():
 def Boss():
     global ELDER_HU
 
+def Item():
+    
 
 
 def change_state_alert(i):
@@ -964,17 +1012,36 @@ def monster_animation():
 
 def intersect_hit_by_monster():
     global MONSTERS, PLAYER_RECT
-    global player_state, x_frame, shake_countX, DashCount
+    global player_state, x_frame, shake_countX, DashCount, FPressed, canPressF, teleport_type
+
+    on = False
+
     for m in MONSTERS:
         if m.btop > PLAYER_RECT.bottom and PLAYER_RECT.top > m.bbottom and m.bleft < PLAYER_RECT.right and PLAYER_RECT.left < m.bright \
           and player_state != 2 \
-          and (m.state == 'alert' or m.state == 'alert_turn' or m.state == 'idle' or m.state == 'turn') \
           and not (10 <= DashCount <= 30): # 맞고 더블로 맞지 않게
-
+          if (m.state == 'alert' or m.state == 'alert_turn' or m.state == 'idle' or m.state == 'turn' or m.state == 'thorn'):
             stop_screen(200)
             player_state = 2
             break_hp(player_hp)
             if shake_countX == 0: shake_countX = 6
+          elif (m.state == 'teleport') or (m.state == 'item'):
+            canPressF = True
+            on = True
+            if (m.state == 'teleport'):
+                if FPressed:
+                    teleport_type = 'boss'
+                    player_state = 3
+                    canPressF = False
+                    stop_screen(300)
+            elif (m.state == 'item'):
+                if FPressed:
+                    pass
+    
+    if not on:
+        canPressF = False
+            
+          
 
 def intersect_hit_by_boss():
     pass
@@ -1015,7 +1082,7 @@ def handle_events():
     global UpKeyPressed, DownKeyPressed, player_state
     global shake_countY, shake_countX
     global StageNum, player_move_y, boss_stage_jump_value
-    global DashCount, PlayDashAnime, DashCoolTime
+    global DashCount, PlayDashAnime, DashCoolTime, FPressed
 
     events = get_events()
     for event in events:
@@ -1087,10 +1154,8 @@ def handle_events():
                     if MoveCount > 60:
                         PlayDashAnime = True
 
-            elif event.key == SDLK_2:
-                StageNum = 2
-            elif event.key == SDLK_1:
-                StageNum = 1
+            elif event.key == SDLK_f:
+                FPressed = True
 
 # ----------------------- shake test ---------------------------
 
@@ -1125,6 +1190,8 @@ def handle_events():
                 DownKeyPressed = False
             elif event.key == SDLK_UP:
                 UpKeyPressed = False
+            elif event.key == SDLK_f:
+                FPressed = False
 
 def collision_repair(i):
     global y, block_y, BLOCKS, PLAYER_RECT
@@ -1268,7 +1335,7 @@ def shake_anime_count():
     elif shake_hit_count == -2: shake_screen(  4, 0)
     elif shake_hit_count == -1: shake_screen(  3, 0)
 
-def animation_count(): # 16 x 16
+def animation_count():
     global count, x_frame, y_frame, player_state, hero_heading_left, hero_heading_right
     global LeftKeyPressed, RightKeyPressed, is_falling
     global attack_anime_count, attack_dir
@@ -1607,10 +1674,11 @@ def draw_hp():
             hp_x.draw(35 * i + 100, 640, int(hp_x.w * 0.7), int(hp_x.h*0.7))
 
 def break_hp(hp):
-    global hp_to_break, player_hp, player_state, hp_x_frame
+    global hp_to_break, player_hp, player_state, hp_x_frame, teleport_type
     
     if player_hp - 1 <= 0:
         player_state = 3
+        teleport_type = 'start'
         stop_screen(300)
         return
     
@@ -1626,6 +1694,12 @@ def draw_breaking_hp():
     if hp_to_break >= 0:
         hp_breaking.clip_draw_to_origin(hp_breaking.w // 4 * hp_x_frame, 0, hp_breaking.w // 4, hp_breaking.h,
                                         35 * (hp_to_break) + 47, 605, 35, 65)
+
+def draw_f_button():
+    global canPressF, play_font, PLAYER_RECT
+    if canPressF:
+        play_font.draw(PLAYER_RECT.left + 50 + 1, PLAYER_RECT.top + 1, 'F', (0, 0, 0))
+        play_font.draw(PLAYER_RECT.left + 50, PLAYER_RECT.top, 'F', (255, 255, 255))
 
 def Game_State():
     init_image()
@@ -1656,6 +1730,7 @@ def Game_State():
         draw_hp()
         draw_breaking_hp()
         draw_attack_effect()
+        draw_f_button()
 
         if show_blocks:
             draw_rectangle(PLAYER_RECT.left, PLAYER_RECT.top, PLAYER_RECT.right, PLAYER_RECT.bottom)

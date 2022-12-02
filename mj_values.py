@@ -6,13 +6,13 @@ X_MOVE_POWER = 3
 Y_MOVE_POWER = 3
 
 # 시작점 좌표. 플레이어 스폰 용
-PLAYER_START_X = 1000.0
-PLAYER_START_Y = 8000.0
-START_BLOCK_X = -1000.0
-START_BLOCK_Y = -8000.0
+PLAYER_START_X = 100.0
+PLAYER_START_Y = 6400.0
+START_BLOCK_X = -PLAYER_START_X
+START_BLOCK_Y = -PLAYER_START_Y
 
 # 보스방 앞 좌표 만들어야 함
-
+teleport_type = ''
 
 stop_count = 0
 if_stop_screen = False
@@ -58,6 +58,7 @@ JumpAgain = True
 
 MONSTER_CNT, monster_data = 0, []
 
+play_font = None
 black_rect, white_rect, hero_right, hero_left, ex_map, ex_block = None, None, None, None, None, None
 hero_left_70, hero_left_40, hero_right_70, hero_right_40 = None, None, None, None
 fly_idle, fly_chase, fly_die, fly_turn_left, fly_shock = None, None, None, None, None
@@ -119,7 +120,8 @@ pdark_count = 9
 pdark_dir = -1
 
 pdc = 0
-
+FPressed = False
+canPressF = False
 
 # ---------------------- menu --------------------------
 

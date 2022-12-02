@@ -161,7 +161,7 @@ def handle_events():
                 blue_left = left
                 blue_bottom = bottom
                 blue_type = 3
-            elif event.key == SDLK_4:
+            elif event.key == SDLK_4: # teleport
                 if draw_blue == True:
                     draw_blue = False
                     return
@@ -169,6 +169,14 @@ def handle_events():
                 blue_left = left
                 blue_bottom = bottom
                 blue_type = 4
+            elif event.key == SDLK_5: # item
+                if draw_blue == True:
+                    draw_blue = False
+                    return
+                draw_blue = True
+                blue_left = left
+                blue_bottom = bottom
+                blue_type = 5
 
 
         elif event.type == SDL_KEYUP:
@@ -312,9 +320,11 @@ while running:
             block_blue.draw(blocks[i].left + (blocks[i].width // 2), blocks[i].bottom + (blocks[i].height // 2), blocks[i].width, blocks[i].height)
         elif blocks[i].type == 2:
             block_white.draw(blocks[i].left + (blocks[i].width // 2), blocks[i].bottom + (blocks[i].height // 2), blocks[i].width, blocks[i].height)
-        elif blocks[i].type == 3:
+        elif blocks[i].type == 3 or blocks[i].type == 4 or blocks[i].type == 5:
             block_black.draw(blocks[i].left + (blocks[i].width // 2), blocks[i].bottom + (blocks[i].height // 2), blocks[i].width, blocks[i].height)
         
+
+
         draw_rectangle(blocks[i].left, blocks[i].bottom, blocks[i].left + blocks[i].width, blocks[i].bottom + blocks[i].height)
         
 
