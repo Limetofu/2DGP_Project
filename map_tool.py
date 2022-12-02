@@ -306,32 +306,3 @@ with open('grid_data.txt', 'w') as file:
 
 
 close_canvas()
-
-
-'''
-    class BLOCK:
-        x: int
-        y: int
-        type: int
-
-    blocks = []
-    grid_data = []
-
-    file = open("grid_data.txt", "r")
-        # 파일 열기. 뒤의 인자는 C와 동일
-    before_strings = file.readlines()
-        # 개행 문자 포함, 리스트 형식 return
-    file.close()
-
-    # 개행 문자 제거
-    for i in before_strings:
-        tmp_str = i.replace('\n', '')
-        grid_data.append(tmp_str)
-
-    # BLOCK 구조체 생성, 붙여넣기.
-    for i in range(0, 1000000):
-        blocks.append(BLOCK())
-        blocks[i].x = grid_data[i][0:4]
-        blocks[i].y = grid_data[i][5:9]
-        blocks[i].type = grid_data[i][10]
-'''

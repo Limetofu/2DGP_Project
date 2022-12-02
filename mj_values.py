@@ -5,10 +5,14 @@ running = False
 X_MOVE_POWER = 3
 Y_MOVE_POWER = 3
 
-PLAYER_START_X = 0.0
-PLAYER_START_Y = 3000.0
-START_BLOCK_X = 0.0
-START_BLOCK_Y = -3000.0
+# 시작점 좌표. 플레이어 스폰 용
+PLAYER_START_X = 1000.0
+PLAYER_START_Y = 8000.0
+START_BLOCK_X = -1000.0
+START_BLOCK_Y = -8000.0
+
+# 보스방 앞 좌표 만들어야 함
+
 
 stop_count = 0
 if_stop_screen = False

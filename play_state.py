@@ -52,12 +52,62 @@ class HIT_EFFECT:
     x: int
     y: int
     left: int
+    right: int
     bottom: int
+    top: int
     show: bool
     count: int
     x_frame: int
     dir: str
 
+class BOSS:
+    x: int
+    y: int
+
+    hp: int
+
+    left: int
+    bottom: int
+    right: int
+    top: int
+
+    bleft: int
+    bbottom: int
+    bright: int
+    btop: int
+    
+    width: int
+    height: int
+
+    type: str
+    state: str
+
+    count: int
+    xframe: int
+    dir: int
+
+class PATTERN:
+    x: int
+    y: int
+
+    left: int
+    bottom: int
+    right: int
+    top: int
+
+    bleft: int
+    bbottom: int
+    bright: int
+    btop: int
+
+    width: int
+    height: int
+
+    count: int
+    xframe: int
+
+    type: str
+    state: str
 
 # BLOCK 구조체 배열(리스트) 만들 예정. 
 BLOCKS = []
@@ -100,10 +150,14 @@ def load_monster():
         monster_data.append(tmp_str)
 
     for i in range(MONSTER_CNT):
+        mtype = int(monster_data[i][24])
+        if mtype == 4: # Elder Hu
+            pass
+
         MONSTERS.append(MONSTER())
         MONSTERS[i].x = int(monster_data[i][0:6])
         MONSTERS[i].y = int(monster_data[i][7:13])
-        mtype = int(monster_data[i][24])
+        
         if mtype == 1: # fly
             MONSTERS[i].width = 150
             MONSTERS[i].height = 150
@@ -120,9 +174,12 @@ def load_monster():
         
         MONSTERS[i].count = 0
         MONSTERS[i].x_frame = 0
-        MONSTERS[i].dir = -1
-
-        # print(MONSTERS[i].type, MONSTERS[i].state, MONSTERS[i].hp, MONSTERS[i].dir)
+        if randint(0, 1):
+            MONSTERS[i].dir = -1
+        else:
+            MONSTERS[i].dir = 1
+        if MONSTERS[i].dir != -1 and MONSTERS[i].dir != 1: # -1도 아니고 1도 아니면
+            print(f'{i}th monster dir error')
 
 def blocks_init():
     global BLOCKS, block_x, block_y, MoveDistance, JumpHeight, BLOCK_CNT
@@ -593,7 +650,7 @@ def Attack():
                     m.x_frame = 0
                     m.hp -= 1
                     shake_hit_count = 6
-                    attack_effect(m.left + (m.width // 2), m.bottom + (m.height // 2), 'down')
+                    attack_effect(m.x, m.y, 'down')
 
 
 
@@ -614,7 +671,7 @@ def Attack():
                     m.x_frame = 0
                     m.hp -= 1
                     shake_hit_count = 6
-                    attack_effect(m.bleft + (m.width // 2), m.bbottom, 'up')
+                    attack_effect(m.x, m.y, 'up')
             
 
         elif hero_heading_left:
@@ -629,7 +686,7 @@ def Attack():
                     m.x_frame = 0
                     m.hp -= 1
                     shake_hit_count = 6
-                    attack_effect(m.bright, m.bbottom, 'right')
+                    attack_effect(m.x, m.y, 'right')
         
         else:
             attack_dir = 1
@@ -643,7 +700,10 @@ def Attack():
                     m.x_frame = 0
                     m.hp -= 1
                     shake_hit_count = 6
-                    attack_effect(m.bleft, m.bbottom, 'left')
+                    attack_effect(m.x, m.y, 'left')
+                    print('monsters x : ', m.x, 'left : ', m.bleft)
+                    print('monsters y : ', m.y, 'bott : ', m.bbottom)
+
     
     else: # 0이 아님! -> 공격중. count 올려주자
         if attack_anime_count > attack_anime_frame:
@@ -662,11 +722,20 @@ def attack_effect(x, y, dir):
     hit_effect.append(HIT_EFFECT())
     hit_effect[l].x = x
     hit_effect[l].y = y
+    hit_effect[l].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + x
+    hit_effect[l].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + y
+    # print(f'effect x :{hit_effect[l].x} | effect y :{hit_effect[l].y}')
     hit_effect[l].show = True
     hit_effect[l].x_frame = 0
     hit_effect[l].count = 0
     hit_effect[l].dir = dir
 
+def update_effect():
+    global hit_effect
+    for l in range(len(hit_effect)):
+        hit_effect[l].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + hit_effect[l].x
+        hit_effect[l].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + hit_effect[l].y
+    
 def attack_effect_count():
     global hit_effect, hit_effect_image
     del_cnt_list = []
@@ -698,22 +767,22 @@ def draw_attack_effect():
             if a.dir == 'left':
                 hit_effect_image.clip_draw_to_origin(hit_effect_image.w // 3 * a.x_frame, 0,
                                                  hit_effect_image.w // 3, hit_effect_image.h,
-                                                 a.x, a.y, hit_effect_image.w // 3, hit_effect_image.h)
+                                                 a.left, a.bottom, hit_effect_image.w // 3, hit_effect_image.h)
             if a.dir == 'right':
                 hit_effect_image.clip_composite_draw(hit_effect_image.w // 3 * a.x_frame, 0, 
                                                  hit_effect_image.w // 3, hit_effect_image.h,
                                                  0, 'h',
-                                                 a.x, a.y + (hit_effect_image.h // 2), hit_effect_image.w // 3, hit_effect_image.h)
+                                                 a.left, a.bottom + (hit_effect_image.h // 2), hit_effect_image.w // 3, hit_effect_image.h)
             if a.dir == 'up':
                 hit_effect_image.clip_composite_draw(hit_effect_image.w // 3 * a.x_frame, 0, 
                                                  hit_effect_image.w // 3, hit_effect_image.h,
                                                  0, 'v',
-                                                 a.x, a.y + (hit_effect_image.h // 2), hit_effect_image.w // 3, hit_effect_image.h)
+                                                 a.left + (hit_effect_image.w // 6), a.bottom + (hit_effect_image.h // 2), hit_effect_image.w // 3, hit_effect_image.h)
             if a.dir == 'down':
                 hit_effect_image.clip_composite_draw(hit_effect_image.w // 3 * a.x_frame, 0, 
                                                  hit_effect_image.w // 3, hit_effect_image.h,
                                                  0, 'hv',
-                                                 a.x, a.y + (hit_effect_image.h // 2), hit_effect_image.w // 3, hit_effect_image.h)
+                                                 a.left, a.bottom + (hit_effect_image.h // 2), hit_effect_image.w // 3, hit_effect_image.h)
 
 def Fly():
     global MONSTERS
@@ -844,6 +913,11 @@ def Fly():
             
     monster_animation()
 
+def Boss():
+    global ELDER_HU
+
+
+
 def change_state_alert(i):
     global MONSTERS, PLAYER_RECT
 
@@ -902,6 +976,9 @@ def intersect_hit_by_monster():
             break_hp(player_hp)
             if shake_countX == 0: shake_countX = 6
 
+def intersect_hit_by_boss():
+    pass
+
 def hit_god_count():
     global player_state, hit_count
     if player_state == 2:
@@ -944,6 +1021,7 @@ def handle_events():
     for event in events:
         if event.type == SDL_QUIT:
             running = False
+            exit(0)
 
         elif event.type == SDL_KEYDOWN:
             if event.key == SDLK_SPACE:
@@ -1597,10 +1675,12 @@ def Game_State():
 
             blocks_init()
             player_init()
+            update_effect()
 
             attack_effect_count()
             animation_count()
             intersect_hit_by_monster()
+            intersect_hit_by_boss()
             hit_god_count()
 
             
