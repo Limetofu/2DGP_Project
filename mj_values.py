@@ -63,6 +63,10 @@ black_rect, white_rect, hero_right, hero_left, ex_map, ex_block = None, None, No
 hero_left_70, hero_left_40, hero_right_70, hero_right_40 = None, None, None, None
 fly_idle, fly_chase, fly_die, fly_turn_left, fly_shock = None, None, None, None, None
 tiktik_idle, tiktik_dying, tiktik_stun = None, None, None
+item = None
+hp_gage, hp_gage_frame = None, None
+
+player_hp_gage = 7
 
 hp_o, hp_x, hp_breaking = None, None, None
 hp_x_frame = 0

@@ -188,6 +188,13 @@ def load_monster():
                 M[i].state = 'teleport'
                 M[i].hp = 999
             
+            elif mtype == 5: # heart item
+                M[i].width = 50
+                M[i].height = 50
+                M[i].type = 'item'
+                M[i].state = 'on'
+                M[i].hp = 999
+
             M[i].count = 0
             M[i].x_frame = 0
             if randint(0, 1):
@@ -341,21 +348,22 @@ def player_resurrection(dest = 'start'):
     JumpAgain = True
 
     for i in range(MONSTER_CNT):
-        MONSTERS[i].x = MONSTERS_ORIGINAL_POS[i].x
-        MONSTERS[i].y = MONSTERS_ORIGINAL_POS[i].y
-        MONSTERS[i].width = MONSTERS_ORIGINAL_POS[i].width
-        MONSTERS[i].height = MONSTERS_ORIGINAL_POS[i].height
-        MONSTERS[i].type = MONSTERS_ORIGINAL_POS[i].type
-        MONSTERS[i].state = MONSTERS_ORIGINAL_POS[i].state
-        MONSTERS[i].hp = MONSTERS_ORIGINAL_POS[i].hp
+        if MONSTERS[i].type != 'item':
+            MONSTERS[i].x = MONSTERS_ORIGINAL_POS[i].x
+            MONSTERS[i].y = MONSTERS_ORIGINAL_POS[i].y
+            MONSTERS[i].width = MONSTERS_ORIGINAL_POS[i].width
+            MONSTERS[i].height = MONSTERS_ORIGINAL_POS[i].height
+            MONSTERS[i].type = MONSTERS_ORIGINAL_POS[i].type
+            MONSTERS[i].state = MONSTERS_ORIGINAL_POS[i].state
+            MONSTERS[i].hp = MONSTERS_ORIGINAL_POS[i].hp
 
-        MONSTERS[i].count = 0
-        MONSTERS[i].x_frame = 0
+            MONSTERS[i].count = 0
+            MONSTERS[i].x_frame = 0
 
-        if randint(0, 1):
-            MONSTERS[i].dir = -1
-        else:
-            MONSTERS[i].dir = 1
+            if randint(0, 1):
+                MONSTERS[i].dir = -1
+            else:
+                MONSTERS[i].dir = 1
 
 def Jump():
     global JumpKeyPressed, JumpHeight, JumpPower, JumpTime
@@ -698,9 +706,6 @@ def Attack():
                     shake_hit_count = 6
                     attack_effect(m.x, m.y, 'down')
 
-
-
-
         elif UpKeyPressed:
             if hero_heading_left:
                 attack_dir = 3
@@ -763,9 +768,17 @@ def Attack():
             attack_anime_count += 1
 
 def attack_effect(x, y, dir):
-    global hit_effect
+    global hit_effect, player_hp_gage
     l = len(hit_effect)
     hit_effect.append(HIT_EFFECT())
+
+
+    player_hp_gage += 1
+
+    if player_hp_gage >= 11:
+        player_hp_gage = 10
+
+
     hit_effect[l].x = x
     hit_effect[l].y = y
     hit_effect[l].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + x
@@ -926,13 +939,13 @@ def Fly():
                         m.count = 0
                         m.dir *= -1
                     else:
-                        m.x += 0.5
+                        m.x += 0.1
                 elif m.dir == -1:
                     if m.count >= 600:
                         m.count = 0
                         m.dir *= -1
                     else:
-                        m.x -= 0.5
+                        m.x -= 0.1
 
             elif m.state == 'hit':
                 if m.hp <= 0: 
@@ -961,10 +974,6 @@ def Fly():
 
 def Boss():
     global ELDER_HU
-
-def Item():
-    
-
 
 def change_state_alert(i):
     global MONSTERS, PLAYER_RECT
@@ -1013,6 +1022,7 @@ def monster_animation():
 def intersect_hit_by_monster():
     global MONSTERS, PLAYER_RECT
     global player_state, x_frame, shake_countX, DashCount, FPressed, canPressF, teleport_type
+    global player_full_hp, player_hp
 
     on = False
 
@@ -1025,24 +1035,23 @@ def intersect_hit_by_monster():
             player_state = 2
             break_hp(player_hp)
             if shake_countX == 0: shake_countX = 6
-          elif (m.state == 'teleport') or (m.state == 'item'):
+          elif (m.state == 'teleport') or (m.state == 'on'):
             canPressF = True
             on = True
             if (m.state == 'teleport'):
                 if FPressed:
                     teleport_type = 'boss'
                     player_state = 3
-                    canPressF = False
                     stop_screen(300)
-            elif (m.state == 'item'):
+            elif (m.state == 'on'):
                 if FPressed:
-                    pass
+                    m.state = 'off'
+                    player_full_hp += 1
+                    player_hp += 1
     
     if not on:
         canPressF = False
             
-          
-
 def intersect_hit_by_boss():
     pass
 
@@ -1156,6 +1165,8 @@ def handle_events():
 
             elif event.key == SDLK_f:
                 FPressed = True
+            elif event.key == SDLK_a:
+                use_hp_gage()
 
 # ----------------------- shake test ---------------------------
 
@@ -1444,6 +1455,7 @@ def init_image():
     global hp_o, hp_x, hit_effect_image, hp_breaking
     global hero_right_hit, hero_left_hit
     global hero_left_40, hero_left_70, hero_right_40, hero_right_70
+    global item, hp_gage, hp_gage_frame
 
     white_rect = load_image('resources/white_rect.png')
     hero_right = load_image('resources/knight_hero_right.png')
@@ -1475,6 +1487,10 @@ def init_image():
     hp_x = load_image('resources/hp_x.png')
     hp_breaking = load_image('resources/hp_breaking.png')
     hit_effect_image = load_image('resources/hit_effect_left.png')
+
+    item = load_image('resources/heart.png')
+    hp_gage = load_image('resources/hp_gage.png')
+    hp_gage_frame = load_image('resources/hp_gage_frame.png')
 
 def draw_player():
     # hero? 128x128
@@ -1605,9 +1621,10 @@ def draw_monster():
     global MONSTERS
     global fly_chase, fly_die, fly_turn_left, fly_idle, fly_shock
     global tiktik_idle, tiktik_dying, tiktik_stun
+    global item
 
     for m in MONSTERS:
-        draw_rectangle(int(m.bleft), int(m.bbottom), int(m.bright), int(m.btop))
+        # draw_rectangle(int(m.bleft), int(m.bbottom), int(m.bright), int(m.btop))
         if m.type == 'fly':
 
             if m.state == 'idle':
@@ -1663,15 +1680,34 @@ def draw_monster():
                 if m.dir == -1:
                     tiktik_dying.clip_composite_draw(tiktik_dying.w // 5 * m.x_frame, 0, tiktik_dying.w // 5, tiktik_dying.h, 0, 'h',
                             int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
-                
+
+        elif m.type == 'item' and m.state == 'on':
+            item.draw(int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+
 def draw_hp():
     global player_hp, player_full_hp
     global hp_o, hp_x
 
     for i in range(0, player_hp):
-            hp_o.draw(35 * i + 100, 640, int(hp_o.w * 0.7), int(hp_o.h*0.7))
+            hp_o.draw(35 * i + 198, 580, int(hp_o.w * 0.7), int(hp_o.h*0.7))
     for i in range(player_hp, player_full_hp):
-            hp_x.draw(35 * i + 100, 640, int(hp_x.w * 0.7), int(hp_x.h*0.7))
+            hp_x.draw(35 * i + 198, 580, int(hp_x.w * 0.7), int(hp_x.h*0.7))
+
+def draw_hp_gage():
+    global hp_gage, hp_gage_frame, player_hp_gage
+
+    #hp_gage_frame.draw_to_origin(50, 530, hp_gage_frame.w, hp_gage_frame.h)
+    hp_gage_frame.clip_composite_draw(0, 0, hp_gage_frame.w, hp_gage_frame.h, 0, 'h', 
+                                      50 + (hp_gage_frame.w // 2) - 22, 530 + (hp_gage_frame.h // 2), hp_gage_frame.w, hp_gage_frame.h)
+    hp_gage.clip_draw_to_origin(0, 0, hp_gage.w, (hp_gage.h // 10) * player_hp_gage, 50 + 2, 530 + 13, 
+                                      hp_gage.w, hp_gage.h - (hp_gage.h // 10) * (10 - player_hp_gage))
+
+def use_hp_gage():
+    global player_hp_gage, player_hp, player_full_hp
+
+    if player_hp_gage >= 5 and player_hp < player_full_hp:
+        player_hp_gage -= 5
+        player_hp += 1
 
 def break_hp(hp):
     global hp_to_break, player_hp, player_state, hp_x_frame, teleport_type
@@ -1693,7 +1729,7 @@ def draw_breaking_hp():
 
     if hp_to_break >= 0:
         hp_breaking.clip_draw_to_origin(hp_breaking.w // 4 * hp_x_frame, 0, hp_breaking.w // 4, hp_breaking.h,
-                                        35 * (hp_to_break) + 47, 605, 35, 65)
+                                        35 * (hp_to_break) + 145, 580 - 30, 35, 65)
 
 def draw_f_button():
     global canPressF, play_font, PLAYER_RECT
@@ -1731,6 +1767,7 @@ def Game_State():
         draw_breaking_hp()
         draw_attack_effect()
         draw_f_button()
+        draw_hp_gage()
 
         if show_blocks:
             draw_rectangle(PLAYER_RECT.left, PLAYER_RECT.top, PLAYER_RECT.right, PLAYER_RECT.bottom)

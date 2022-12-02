@@ -169,7 +169,7 @@ def handle_events():
                 blue_left = left
                 blue_bottom = bottom
                 blue_type = 4
-            elif event.key == SDLK_5: # item
+            elif event.key == SDLK_5: # item (heart)
                 if draw_blue == True:
                     draw_blue = False
                     return
@@ -177,6 +177,7 @@ def handle_events():
                 blue_left = left
                 blue_bottom = bottom
                 blue_type = 5
+            
 
 
         elif event.type == SDL_KEYUP:
