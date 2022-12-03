@@ -65,6 +65,7 @@ fly_idle, fly_chase, fly_die, fly_turn_left, fly_shock = None, None, None, None,
 tiktik_idle, tiktik_dying, tiktik_stun = None, None, None
 item = None
 hp_gage, hp_gage_frame = None, None
+warp_image = None
 
 player_hp_gage = 7
 

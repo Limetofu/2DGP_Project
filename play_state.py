@@ -117,6 +117,19 @@ PLAYER_RECT = RECT()
 MONSTERS = []
 MONSTERS_ORIGINAL_POS = []
 
+warp_effect = HIT_EFFECT()
+
+def init_warp_effect():
+    global warp_effect
+    warp_effect.show = False
+    warp_effect.x = 0
+    warp_effect.y = 0
+    warp_effect.left = 0
+    warp_effect.bottom = 0
+    warp_effect.count = 0
+    warp_effect.dir = ''
+    warp_effect.x_frame = 0
+
 def load_block():
     global BLOCKS, BLOCK_CNT, grid_data
     
@@ -752,9 +765,6 @@ def Attack():
                     m.hp -= 1
                     shake_hit_count = 6
                     attack_effect(m.x, m.y, 'left')
-                    print('monsters x : ', m.x, 'left : ', m.bleft)
-                    print('monsters y : ', m.y, 'bott : ', m.bbottom)
-
     
     else: # 0이 아님! -> 공격중. count 올려주자
         if attack_anime_count > attack_anime_frame:
@@ -772,12 +782,10 @@ def attack_effect(x, y, dir):
     l = len(hit_effect)
     hit_effect.append(HIT_EFFECT())
 
-
     player_hp_gage += 1
 
     if player_hp_gage >= 11:
         player_hp_gage = 10
-
 
     hit_effect[l].x = x
     hit_effect[l].y = y
@@ -789,14 +797,28 @@ def attack_effect(x, y, dir):
     hit_effect[l].count = 0
     hit_effect[l].dir = dir
 
+def boss_warp_effect(x, y):
+    global warp_effect
+    warp_effect.x = x
+    warp_effect.y = y
+    warp_effect.left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + x
+    warp_effect.bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + y
+
+    warp_effect.show = True
+    warp_effect.count = 0
+    warp_effect.dir = ''
+    
 def update_effect():
-    global hit_effect
+    global hit_effect, warp_effect
     for l in range(len(hit_effect)):
         hit_effect[l].left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + hit_effect[l].x
         hit_effect[l].bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + hit_effect[l].y
+    warp_effect.left = int(block_x - MoveDistance) // (X_MOVE_POWER / 2) + warp_effect.x
+    warp_effect.bottom = int(block_y + JumpHeight) // (Y_MOVE_POWER / 2) + warp_effect.y
 
 def attack_effect_count():
-    global hit_effect, hit_effect_image
+    global hit_effect, hit_effect_image, warp_effect
+
     del_cnt_list = []
 
     cnt = -1
@@ -809,6 +831,21 @@ def attack_effect_count():
                 else: a.x_frame += 1
             a.count += 1
     del_attack_effect(del_cnt_list)
+
+def warp_effect_count():
+    global warp_effect
+
+    if warp_effect.show:
+        if warp_effect.count == 15:
+            if warp_effect.x_frame + 1 == 4:
+                warp_effect.x_frame = 0
+                warp_effect.count = 0
+                warp_effect.show = False
+            else:
+                warp_effect.x_frame = (warp_effect.x_frame + 1) % 4
+                warp_effect.count = 0
+        else: 
+            warp_effect.count += 1
 
 def del_attack_effect(del_cnt_list):
     global hit_effect
@@ -842,6 +879,12 @@ def draw_attack_effect():
                                                  hit_effect_image.w // 3, hit_effect_image.h,
                                                  0, 'hv',
                                                  a.left, a.bottom + (hit_effect_image.h // 2), hit_effect_image.w // 3, hit_effect_image.h)
+
+def draw_warp_effect():
+    global warp_effect, warp_image
+    if warp_effect.show:
+        draw_rectangle(int(warp_effect.left) - 10, int(warp_effect.bottom) - 10, int(warp_effect.left) + 10, int(warp_effect.bottom) + 10)
+        warp_image.clip_draw(0, warp_effect.x_frame * (warp_image.h // 4), 1843, 614, int(warp_effect.left), int(warp_effect.bottom), 402, 134)
 
 def Fly():
     global MONSTERS
@@ -967,13 +1010,23 @@ def Fly():
                     m.count += 1
             elif m.state == 'dead':
                 pass
+        elif m.type == 'elder_hu':
+            if m.state == 'sleep':
+                pass
+            elif m.state == 'boss_idle':
+                pass
+            elif m.state == 'warp':
+                pass
+            elif m.state == 'attack':
+                pass
+            elif m.state == 'dying':
+                pass
+            elif m.state == 'die':
+                pass
 
         m.count += 1
             
     monster_animation()
-
-def Boss():
-    global ELDER_HU
 
 def change_state_alert(i):
     global MONSTERS, PLAYER_RECT
@@ -1091,7 +1144,7 @@ def handle_events():
     global UpKeyPressed, DownKeyPressed, player_state
     global shake_countY, shake_countX
     global StageNum, player_move_y, boss_stage_jump_value
-    global DashCount, PlayDashAnime, DashCoolTime, FPressed
+    global DashCount, PlayDashAnime, DashCoolTime, FPressed, warp_effect
 
     events = get_events()
     for event in events:
@@ -1167,6 +1220,9 @@ def handle_events():
                 FPressed = True
             elif event.key == SDLK_a:
                 use_hp_gage()
+            elif event.key == SDLK_8:
+                if not warp_effect.show:
+                    boss_warp_effect(int(PLAYER_START_X), int(PLAYER_START_X))
 
 # ----------------------- shake test ---------------------------
 
@@ -1455,7 +1511,7 @@ def init_image():
     global hp_o, hp_x, hit_effect_image, hp_breaking
     global hero_right_hit, hero_left_hit
     global hero_left_40, hero_left_70, hero_right_40, hero_right_70
-    global item, hp_gage, hp_gage_frame
+    global item, hp_gage, hp_gage_frame, warp_image
 
     white_rect = load_image('resources/white_rect.png')
     hero_right = load_image('resources/knight_hero_right.png')
@@ -1491,6 +1547,8 @@ def init_image():
     item = load_image('resources/heart.png')
     hp_gage = load_image('resources/hp_gage.png')
     hp_gage_frame = load_image('resources/hp_gage_frame.png')
+
+    warp_image = load_image('resources/monsters/boss_warp.png')
 
 def draw_player():
     # hero? 128x128
@@ -1745,8 +1803,8 @@ def Game_State():
 
     blocks_init()
     monster_init()
-    
     player_init()
+    init_warp_effect()
     Fly()
     animation_count()
     init_dark_images()
@@ -1768,6 +1826,9 @@ def Game_State():
         draw_attack_effect()
         draw_f_button()
         draw_hp_gage()
+        draw_warp_effect()
+
+        
 
         if show_blocks:
             draw_rectangle(PLAYER_RECT.left, PLAYER_RECT.top, PLAYER_RECT.right, PLAYER_RECT.bottom)
@@ -1794,9 +1855,8 @@ def Game_State():
             intersect_hit_by_monster()
             intersect_hit_by_boss()
             hit_god_count()
+            warp_effect_count()
 
-            
-            
         else:
             stop_screen_count()
 
