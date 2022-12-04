@@ -1816,49 +1816,51 @@ def Game_State():
     while running:
         clear_canvas()
 
-        # draw(Xpos for start, Ypos for start, WIDTH /none, HEIGHT /none)
-        ex_block.clip_draw(int(x - MoveDistance) // X_MOVE_POWER, int(y - JumpHeight) // Y_MOVE_POWER, 640, 360, 640, 360, 1280, 720)
+        for i in range(0, 2):
 
-        draw_player()
-        draw_monster()
-        draw_hp()
-        draw_breaking_hp()
-        draw_attack_effect()
-        draw_f_button()
-        draw_hp_gage()
-        draw_warp_effect()
+            # draw(Xpos for start, Ypos for start, WIDTH /none, HEIGHT /none)
+            ex_block.clip_draw(int(x - MoveDistance) // X_MOVE_POWER, int(y - JumpHeight) // Y_MOVE_POWER, 640, 360, 640, 360, 1280, 720)
 
-        
+            draw_player()
+            draw_monster()
+            draw_hp()
+            draw_breaking_hp()
+            draw_attack_effect()
+            draw_f_button()
+            draw_hp_gage()
+            draw_warp_effect()
 
-        if show_blocks:
-            draw_rectangle(PLAYER_RECT.left, PLAYER_RECT.top, PLAYER_RECT.right, PLAYER_RECT.bottom)
-            for i in range(BLOCK_CNT):
-                draw_rectangle(BLOCKS[i].left, BLOCKS[i].bottom, BLOCKS[i].right, BLOCKS[i].top)
+            
 
-        pdark_animation()
-        pdraw_dark()
+            if show_blocks:
+                draw_rectangle(PLAYER_RECT.left, PLAYER_RECT.top, PLAYER_RECT.right, PLAYER_RECT.bottom)
+                for i in range(BLOCK_CNT):
+                    draw_rectangle(BLOCKS[i].left, BLOCKS[i].bottom, BLOCKS[i].right, BLOCKS[i].top)
 
-        if if_stop_screen == False:
-            handle_events()
+            pdark_animation()
+            pdraw_dark()
 
-            Fly()
-            Move()
-            Jump()
-            Attack()
+            if if_stop_screen == False:
+                handle_events()
 
-            blocks_init()
-            player_init()
-            update_effect()
+                Fly()
+                Move()
+                Jump()
+                Attack()
 
-            attack_effect_count()
-            animation_count()
-            intersect_hit_by_monster()
-            intersect_hit_by_boss()
-            hit_god_count()
-            warp_effect_count()
+                blocks_init()
+                player_init()
+                update_effect()
 
-        else:
-            stop_screen_count()
+                attack_effect_count()
+                animation_count()
+                intersect_hit_by_monster()
+                intersect_hit_by_boss()
+                hit_god_count()
+                warp_effect_count()
+
+            else:
+                stop_screen_count()
 
 
         update_canvas()
@@ -1866,5 +1868,5 @@ def Game_State():
     close_canvas()
 
 if __name__ == '__main__':
-    open_canvas(1280, 720, sync=False)
+    open_canvas(1280, 720, sync=True)
     Game_State()
