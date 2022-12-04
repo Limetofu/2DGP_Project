@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from mj_values import *
 import numpy as np
 from check_col import collision_check
-from time import time
+import time
 from random import randint
 
 '''  '''
@@ -1792,8 +1792,8 @@ def draw_breaking_hp():
 def draw_f_button():
     global canPressF, play_font, PLAYER_RECT
     if canPressF:
-        play_font.draw(PLAYER_RECT.left + 50 + 1, PLAYER_RECT.top + 1, 'F', (0, 0, 0))
-        play_font.draw(PLAYER_RECT.left + 50, PLAYER_RECT.top, 'F', (255, 255, 255))
+        play_font.draw(PLAYER_RECT.left + 40 + 1, PLAYER_RECT.top + 1, 'F', (0, 0, 0))
+        play_font.draw(PLAYER_RECT.left + 40, PLAYER_RECT.top, 'F', (255, 255, 255))
 
 def Game_State():
     init_image()
@@ -1816,6 +1816,8 @@ def Game_State():
     while running:
         clear_canvas()
 
+        current_time = time.time()
+
         for i in range(0, 2):
 
             # draw(Xpos for start, Ypos for start, WIDTH /none, HEIGHT /none)
@@ -1829,8 +1831,6 @@ def Game_State():
             draw_f_button()
             draw_hp_gage()
             draw_warp_effect()
-
-            
 
             if show_blocks:
                 draw_rectangle(PLAYER_RECT.left, PLAYER_RECT.top, PLAYER_RECT.right, PLAYER_RECT.bottom)
@@ -1864,6 +1864,13 @@ def Game_State():
 
 
         update_canvas()
+
+        global frame_time
+        frame_time = time.time() - current_time
+        frame_rate = 1.0 / frame_time
+        current_time += frame_time
+        if frame_rate > 200:
+            print(f'Frame Time: {frame_time}, Frame Rate: {frame_rate}')
 
     close_canvas()
 

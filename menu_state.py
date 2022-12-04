@@ -288,5 +288,5 @@ def Title_Menu_State():
                 exit(0)
 
 if __name__ == '__main__':
-    open_canvas(1280, 720, sync=False)
+    open_canvas(1280, 720, sync=True)
     Title_Menu_State()

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 running = False
+frame_time = 0.0
 
 X_MOVE_POWER = 3
 Y_MOVE_POWER = 3

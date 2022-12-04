@@ -70,7 +70,6 @@ def handle_event():
         elif event.type == SDL_KEYDOWN:
 
             if event.key == SDLK_RETURN:
-                print('pressed!')
                 esc_pressed = True
 
 def init_key_values():
@@ -116,14 +115,12 @@ def Key_Guide_State():
 
         if esc_pressed:
             kenable_dark = True
-            print('swap', kdc)
             if kdc >= 37:
-                print('37')
                 kdc = 0
                 key_running = False
                 esc_pressed = False
                 menu_state.Title_Menu_State()
 
 if __name__ == '__main__':
-    open_canvas(1280, 720, sync=False)
+    open_canvas(1280, 720, sync=True)
     Key_Guide_State()
