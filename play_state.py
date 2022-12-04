@@ -1817,8 +1817,9 @@ def Game_State():
         clear_canvas()
 
         current_time = time.time()
-
-        for i in range(0, 2):
+        
+        global frame_for
+        for i in range(0, frame_for):
 
             # draw(Xpos for start, Ypos for start, WIDTH /none, HEIGHT /none)
             ex_block.clip_draw(int(x - MoveDistance) // X_MOVE_POWER, int(y - JumpHeight) // Y_MOVE_POWER, 640, 360, 640, 360, 1280, 720)
@@ -1868,9 +1869,15 @@ def Game_State():
         global frame_time
         frame_time = time.time() - current_time
         frame_rate = 1.0 / frame_time
+        if frame_rate > 140:
+            frame_for = 2
+        elif frame_rate > 110:
+            frame_for = 3
+        elif frame_rate > 80:
+            frame_for = 4
+        else: frame_for = 5
         current_time += frame_time
-        if frame_rate > 200:
-            print(f'Frame Time: {frame_time}, Frame Rate: {frame_rate}')
+        # print(f'Frame Time: {frame_time}, Frame Rate: {frame_rate}')
 
     close_canvas()
 
