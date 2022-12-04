@@ -68,6 +68,10 @@ tiktik_idle, tiktik_dying, tiktik_stun = None, None, None
 item = None
 hp_gage, hp_gage_frame = None, None
 warp_image = None
+boss_idle, boss_pattern_idle, boss_attack = None, None, None
+boss_pattern_attack = None
+
+warped = False
 
 player_hp_gage = 7
 

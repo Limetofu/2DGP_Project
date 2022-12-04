@@ -173,6 +173,13 @@ def load_monster():
             M[i].x = int(monster_data[i][0:6])
             M[i].y = int(monster_data[i][7:13])
             
+            if randint(0, 1):
+                M[i].dir = -1
+            else:
+                M[i].dir = 1
+            if M[i].dir != -1 and M[i].dir != 1: # -1도 아니고 1도 아니면
+                print(f'{i}th monster dir error')
+
             if mtype == 1: # fly
                 M[i].width = 150
                 M[i].height = 150
@@ -208,14 +215,23 @@ def load_monster():
                 M[i].state = 'on'
                 M[i].hp = 999
 
+            elif mtype == 6: # boss
+                M[i].width = 102
+                M[i].height = 90
+                M[i].type = 'boss'
+                M[i].state = 'sleep'
+                M[i].hp = 150
+
+            elif mtype == 7: # boss pattern
+                M[i].width = 102
+                M[i].height = 90
+                M[i].type = 'boss'
+                M[i].state = 'sleep'
+                M[i].hp = 999
+                M[i].dir = -1
+
             M[i].count = 0
             M[i].x_frame = 0
-            if randint(0, 1):
-                M[i].dir = -1
-            else:
-                M[i].dir = 1
-            if M[i].dir != -1 and M[i].dir != 1: # -1도 아니고 1도 아니면
-                print(f'{i}th monster dir error')
 
 def blocks_init():
     global BLOCKS, block_x, block_y, MoveDistance, JumpHeight, BLOCK_CNT
@@ -709,10 +725,12 @@ def Attack():
             attack_dir = -2
             x_frame = 7
             for m in MONSTERS:
-                if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn') and \
+                if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn' or m.state == 'boss_idle' \
+                    or m.state == 'attack') and \
                     PLAYER_RECT.left - 80 < m.bleft + (m.width // 2) < PLAYER_RECT.right + 80 and \
                     PLAYER_RECT.bottom - 150 < m.btop < PLAYER_RECT.bottom:
-                    m.state = 'hit'
+                    if (m.state != 'boss_idle' and m.state != 'attack'):
+                        m.state = 'hit'
                     m.count = 0
                     m.x_frame = 0
                     m.hp -= 1
@@ -727,10 +745,12 @@ def Attack():
                 attack_dir = 2
                 x_frame = 0
             for m in MONSTERS:
-                if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn') and \
+                if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn' or m.state == 'boss_idle' \
+                    or m.state == 'attack') and \
                     PLAYER_RECT.left - 80 < m.bleft + (m.width // 2) < PLAYER_RECT.left + 80 and \
                     PLAYER_RECT.top < m.bbottom < PLAYER_RECT.top + 150:
-                    m.state = 'hit'
+                    if (m.state != 'boss_idle' and m.state != 'attack'):
+                        m.state = 'hit'
                     m.count = 0
                     m.x_frame = 0
                     m.hp -= 1
@@ -742,10 +762,12 @@ def Attack():
             attack_dir = -1
             x_frame = 15
             for m in MONSTERS:
-                if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn') and \
+                if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn' or m.state == 'boss_idle' \
+                    or m.state == 'attack') and \
                     PLAYER_RECT.left - 150 < m.bright < PLAYER_RECT.left and \
                     PLAYER_RECT.bottom - 50 < m.bbottom < PLAYER_RECT.top + 50:
-                    m.state = 'hit'
+                    if (m.state != 'boss_idle' and m.state != 'attack'):
+                        m.state = 'hit'
                     m.count = 0
                     m.x_frame = 0
                     m.hp -= 1
@@ -756,10 +778,12 @@ def Attack():
             attack_dir = 1
             x_frame = 0
             for m in MONSTERS:
-                if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn') and \
+                if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn' or m.state == 'boss_idle' \
+                    or m.state == 'attack') and \
                     PLAYER_RECT.right < m.bleft < PLAYER_RECT.right + 150 and \
                     PLAYER_RECT.bottom - 50 < m.bbottom < PLAYER_RECT.top + 50:
-                    m.state = 'hit'
+                    if (m.state != 'boss_idle' and m.state != 'attack'):
+                        m.state = 'hit'
                     m.count = 0
                     m.x_frame = 0
                     m.hp -= 1
@@ -888,10 +912,12 @@ def draw_warp_effect():
 
 def Fly():
     global MONSTERS
+    global warped
 
     dataclass_num = -1
 
     # 1. idle
+
     #   기본 위치에서 좌우로 이동
     #   끝에 가면 잠시 멈추고, 방향 바꾸고 turn 상태 출력 후
     #   반대 방향으로 바꾸기. (count 초기화)
@@ -973,7 +999,6 @@ def Fly():
 
             elif m.state == 'dead':
                 pass
-
             
         elif m.type == 'tiktik':
             if m.state == 'idle': # 블럭 따라 이동
@@ -1010,22 +1035,58 @@ def Fly():
                     m.count += 1
             elif m.state == 'dead':
                 pass
-        elif m.type == 'elder_hu':
-            if m.state == 'sleep':
+
+        elif m.type == 'boss':
+            if m.state == 'sleep': # 대기상태, F 상호작용 가능
                 pass
-            elif m.state == 'boss_idle':
-                pass
-            elif m.state == 'warp':
-                pass
+
+            elif m.state == 'boss_idle': # 50% 확률로 
+                if m.count <= 600:
+                    if m.dir == -1:
+                        m.x -= 0.5
+                    elif m.dir == 1:
+                        m.x += 0.5
+                else: # count 다 소모되면
+                    if randint(0, 1):
+                        m.state = 'warp'
+                    else: # to warp
+                        m.state = 'warp'
+
+            elif m.state == 'warp': # 현재 위치에 warp 애니메이션, 애니메이션 한 번 후 워프 위치에
+                                    # 이때는 그리지 않음
+                                    # warp_effect(x, y)
+
+                # start pos
+                if not warped:
+                    boss_warp_effect(m.x + (m.width // 2), m.y + (m.height // 2)) # show = true로 변함.
+                    warped = True
+
+                # dest pos
+                if not warp_effect.show: # warp가 끝나면?
+                    # 새로운 위치로 warp
+                    # boss_warp_effect(, ) <-- 고정 값 둘 중 하나. 왼쪽 끝, 오른쪽 끝. <- dir에 따라서.
+                    if m.dir == 1: # 왼쪽에서 오른쪽 이동했음
+                        # right position
+                        m.x, m.y = 8000, 4500
+                    else: # 오른쪽에서 왼쪽 이동했음
+                        # left position
+                        m.x, m.y = 7400, 4500
+                    m.dir *= -1
+                    boss_warp_effect(m.x + (m.width // 2), m.y + (m.height // 2))
+                    m.state = 'boss_idle'
+                    m.count = 0
+                    m.x_frame = 0
+
             elif m.state == 'attack':
                 pass
+
             elif m.state == 'dying':
                 pass
-            elif m.state == 'die':
+
+            elif m.state == 'dead':
                 pass
 
         m.count += 1
-            
     monster_animation()
 
 def change_state_alert(i):
@@ -1070,6 +1131,11 @@ def monster_animation():
                 elif m.state == 'dying':
                     m.x_frame = (m.x_frame + 1) % 5
 
+        elif m.type == 'boss':
+            if m.count % 30 == 29:
+                if m.state == 'boss_idle':
+                    m.x_frame = (m.x_frame + 1) % 6
+
     monster_init()
 
 def intersect_hit_by_monster():
@@ -1088,7 +1154,7 @@ def intersect_hit_by_monster():
             player_state = 2
             break_hp(player_hp)
             if shake_countX == 0: shake_countX = 6
-          elif (m.state == 'teleport') or (m.state == 'on'):
+          elif (m.state == 'teleport') or (m.state == 'on') or (m.state == 'sleep'):
             canPressF = True
             on = True
             if (m.state == 'teleport'):
@@ -1101,6 +1167,9 @@ def intersect_hit_by_monster():
                     m.state = 'off'
                     player_full_hp += 1
                     player_hp += 1
+            elif (m.state == 'sleep'):
+                if FPressed:
+                    m.state = 'warp'
     
     if not on:
         canPressF = False
@@ -1512,6 +1581,7 @@ def init_image():
     global hero_right_hit, hero_left_hit
     global hero_left_40, hero_left_70, hero_right_40, hero_right_70
     global item, hp_gage, hp_gage_frame, warp_image
+    global boss_idle, boss_pattern_idle, boss_attack, boss_pattern_attack
 
     white_rect = load_image('resources/white_rect.png')
     hero_right = load_image('resources/knight_hero_right.png')
@@ -1549,6 +1619,11 @@ def init_image():
     hp_gage_frame = load_image('resources/hp_gage_frame.png')
 
     warp_image = load_image('resources/monsters/boss_warp.png')
+
+    boss_idle = load_image('resources/monsters/boss_idle.png')
+    boss_pattern_idle = load_image('resources/monsters/boss_pattern_idle.png')
+    boss_pattern_attack = load_image('resources/monsters/boss_pattern_down.png')
+    # boss_attack
 
 def draw_player():
     # hero? 128x128
@@ -1680,6 +1755,8 @@ def draw_monster():
     global fly_chase, fly_die, fly_turn_left, fly_idle, fly_shock
     global tiktik_idle, tiktik_dying, tiktik_stun
     global item
+    global boss_idle, boss_pattern_idle, boss_attack
+    global boss_pattern_attack
 
     for m in MONSTERS:
         # draw_rectangle(int(m.bleft), int(m.bbottom), int(m.bright), int(m.btop))
@@ -1741,6 +1818,13 @@ def draw_monster():
 
         elif m.type == 'item' and m.state == 'on':
             item.draw(int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+
+        elif m.type == 'boss':
+            if m.state == 'boss_idle' or m.state == 'warp':
+                boss_idle.clip_draw(boss_idle.w // 6 * m.x_frame, 0, boss_idle.w // 6, boss_idle.h,
+                                    int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+            elif m.state == 'sleep':
+                pass
 
 def draw_hp():
     global player_hp, player_full_hp

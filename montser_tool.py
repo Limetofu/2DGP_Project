@@ -153,7 +153,7 @@ def handle_events():
                 blue_left = left
                 blue_bottom = bottom
                 blue_type = 2
-            elif event.key == SDLK_3:
+            elif event.key == SDLK_3: # thorn block
                 if draw_blue == True:
                     draw_blue = False
                     return
@@ -177,8 +177,15 @@ def handle_events():
                 blue_left = left
                 blue_bottom = bottom
                 blue_type = 5
-            
-
+            elif event.key == SDLK_6: # boss
+                if draw_blue == True:
+                    draw_blue = False
+                    return
+                draw_blue = True
+                blue_left = left
+                blue_bottom = bottom
+                blue_type = 6
+        
 
         elif event.type == SDL_KEYUP:
             if event.key == SDLK_LSHIFT:
@@ -321,7 +328,7 @@ while running:
             block_blue.draw(blocks[i].left + (blocks[i].width // 2), blocks[i].bottom + (blocks[i].height // 2), blocks[i].width, blocks[i].height)
         elif blocks[i].type == 2:
             block_white.draw(blocks[i].left + (blocks[i].width // 2), blocks[i].bottom + (blocks[i].height // 2), blocks[i].width, blocks[i].height)
-        elif blocks[i].type == 3 or blocks[i].type == 4 or blocks[i].type == 5:
+        elif blocks[i].type == 3 or blocks[i].type == 4 or blocks[i].type == 5 or blocks[i].type == 6:
             block_black.draw(blocks[i].left + (blocks[i].width // 2), blocks[i].bottom + (blocks[i].height // 2), blocks[i].width, blocks[i].height)
         
 
