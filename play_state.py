@@ -220,15 +220,14 @@ def load_monster():
                 M[i].height = 90
                 M[i].type = 'boss'
                 M[i].state = 'sleep'
-                M[i].hp = 150
+                M[i].hp = 50
 
             elif mtype == 7: # boss pattern
-                M[i].width = 102
-                M[i].height = 90
-                M[i].type = 'boss'
-                M[i].state = 'sleep'
+                M[i].width = 196
+                M[i].height = 258
+                M[i].type = 'pattern'
+                M[i].state = 'hide'
                 M[i].hp = 999
-                M[i].dir = -1
 
             M[i].count = 0
             M[i].x_frame = 0
@@ -266,6 +265,11 @@ def monster_init():
             m.bright = m.right - 30
             m.bbottom = m.bottom + 30
             m.btop = m.top - 30
+        elif m.type == 'pattern':
+            m.bleft = m.left + 49
+            m.bright = m.right - 49
+            m.bbottom = m.bottom + 20
+            m.btop = m.top - 65
         else:
             m.bleft = m.left
             m.bright = m.right
@@ -331,6 +335,12 @@ def player_resurrection(dest = 'start'):
     global PLAYER_START_X, PLAYER_START_Y, START_BLOCK_X, START_BLOCK_Y
     global player_full_hp, player_hp
     global MONSTERS, MONSTERS_ORIGINAL_POS
+    global BOSS_ROOM_X, BOSS_ROOM_Y
+    global player_in_boss_stage
+    global bgm_field, bgm_boss
+
+    global sound_map_change
+    sound_map_change.play()
 
     player_state = 0
 
@@ -341,14 +351,29 @@ def player_resurrection(dest = 'start'):
 
         block_x = START_BLOCK_X
         block_y = START_BLOCK_Y # 시작점의 역수로 잡아야 블럭의 위치가 잡힘
+        player_in_boss_stage = False
+        bgm_boss.stop()
+        bgm_field.repeat_play()
 
     elif dest == 'boss':
-        x = 9350.0
-        y = 5950.0 # 시작점
+        x = BOSS_ROOM_X
+        y = BOSS_ROOM_Y # 시작점
 
         block_x = -x
         block_y = -y # 시작점의 역수로 잡아야 블럭의 위치가 잡힘
+        player_in_boss_stage = True
+        bgm_field.stop()
+        bgm_boss.repeat_play()
 
+    elif dest == 'front_boss':
+        x = FRONT_BOSS_ROOM_X
+        y = FRONT_BOSS_ROOM_Y # 시작점
+
+        block_x = -x
+        block_y = -y # 시작점의 역수로 잡아야 블럭의 위치가 잡힘
+        player_in_boss_stage = False
+        bgm_boss.stop()
+        bgm_field.repeat_play()
 
     diameter = 20.0
 
@@ -449,7 +474,8 @@ def Jump():
                 player_on_block_num = i
                 
                 collision_repair(i)
-
+                global sound_land
+                sound_land.play()
                 JumpAgain = False
                 return
 
@@ -528,7 +554,6 @@ def Move():
     # 둘 다 누른 상태가 아니거나, 둘 다 눌렀다가 뗸 상태도 아니면, 바로 종료하기
     if LeftKeyPressed == 0 and RightKeyPressed == 0 and MoveCount == 0:
         return
-
 
     entire_move_count += 1
 
@@ -693,6 +718,7 @@ def Attack():
     global DownKeyPressed, UpKeyPressed, hero_heading_left, hero_heading_right
     global attack_anime_count, attack_dir, attack_anime_frame, x_frame
     global shake_hit_count
+    global sound_attack_hit, sound_attack
 
     if player_state != 1:
         return
@@ -719,7 +745,7 @@ def Attack():
     # attack_dir != 0  -> 공격중
 
     if attack_dir == 0:
-
+        sound_attack.play()
         attack_anime_count = 0 # count 초기화. 새 공격이기 때문
         if DownKeyPressed:
             attack_dir = -2
@@ -728,11 +754,11 @@ def Attack():
                 if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn' or m.state == 'boss_idle' \
                     or m.state == 'attack') and \
                     PLAYER_RECT.left - 80 < m.bleft + (m.width // 2) < PLAYER_RECT.right + 80 and \
-                    PLAYER_RECT.bottom - 150 < m.btop < PLAYER_RECT.bottom:
+                    PLAYER_RECT.bottom - 150 < m.btop < PLAYER_RECT.top:
                     if (m.state != 'boss_idle' and m.state != 'attack'):
                         m.state = 'hit'
-                    m.count = 0
-                    m.x_frame = 0
+                        m.count = 0
+                        m.x_frame = 0
                     m.hp -= 1
                     shake_hit_count = 6
                     attack_effect(m.x, m.y, 'down')
@@ -748,11 +774,11 @@ def Attack():
                 if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn' or m.state == 'boss_idle' \
                     or m.state == 'attack') and \
                     PLAYER_RECT.left - 80 < m.bleft + (m.width // 2) < PLAYER_RECT.left + 80 and \
-                    PLAYER_RECT.top < m.bbottom < PLAYER_RECT.top + 150:
+                    PLAYER_RECT.bottom < m.bbottom < PLAYER_RECT.top + 150:
                     if (m.state != 'boss_idle' and m.state != 'attack'):
                         m.state = 'hit'
-                    m.count = 0
-                    m.x_frame = 0
+                        m.count = 0
+                        m.x_frame = 0
                     m.hp -= 1
                     shake_hit_count = 6
                     attack_effect(m.x, m.y, 'up')
@@ -764,12 +790,13 @@ def Attack():
             for m in MONSTERS:
                 if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn' or m.state == 'boss_idle' \
                     or m.state == 'attack') and \
-                    PLAYER_RECT.left - 150 < m.bright < PLAYER_RECT.left and \
+                    PLAYER_RECT.left - 150 < m.bright < PLAYER_RECT.right and \
                     PLAYER_RECT.bottom - 50 < m.bbottom < PLAYER_RECT.top + 50:
                     if (m.state != 'boss_idle' and m.state != 'attack'):
                         m.state = 'hit'
-                    m.count = 0
-                    m.x_frame = 0
+                        m.count = 0
+                        m.x_frame = 0
+                        
                     m.hp -= 1
                     shake_hit_count = 6
                     attack_effect(m.x, m.y, 'right')
@@ -780,12 +807,12 @@ def Attack():
             for m in MONSTERS:
                 if (m.state == 'idle' or m.state == 'turn' or m.state == 'alert' or m.state == 'alert_turn' or m.state == 'boss_idle' \
                     or m.state == 'attack') and \
-                    PLAYER_RECT.right < m.bleft < PLAYER_RECT.right + 150 and \
+                    PLAYER_RECT.left < m.bleft < PLAYER_RECT.right + 150 and \
                     PLAYER_RECT.bottom - 50 < m.bbottom < PLAYER_RECT.top + 50:
                     if (m.state != 'boss_idle' and m.state != 'attack'):
                         m.state = 'hit'
-                    m.count = 0
-                    m.x_frame = 0
+                        m.count = 0
+                        m.x_frame = 0
                     m.hp -= 1
                     shake_hit_count = 6
                     attack_effect(m.x, m.y, 'left')
@@ -803,6 +830,8 @@ def Attack():
 
 def attack_effect(x, y, dir):
     global hit_effect, player_hp_gage
+    global sound_attack_hit
+    sound_attack_hit.play()
     l = len(hit_effect)
     hit_effect.append(HIT_EFFECT())
 
@@ -831,7 +860,7 @@ def boss_warp_effect(x, y):
     warp_effect.show = True
     warp_effect.count = 0
     warp_effect.dir = ''
-    
+
 def update_effect():
     global hit_effect, warp_effect
     for l in range(len(hit_effect)):
@@ -907,12 +936,12 @@ def draw_attack_effect():
 def draw_warp_effect():
     global warp_effect, warp_image
     if warp_effect.show:
-        draw_rectangle(int(warp_effect.left) - 10, int(warp_effect.bottom) - 10, int(warp_effect.left) + 10, int(warp_effect.bottom) + 10)
+        # draw_rectangle(int(warp_effect.left) - 10, int(warp_effect.bottom) - 10, int(warp_effect.left) + 10, int(warp_effect.bottom) + 10)
         warp_image.clip_draw(0, warp_effect.x_frame * (warp_image.h // 4), 1843, 614, int(warp_effect.left), int(warp_effect.bottom), 402, 134)
 
 def Fly():
     global MONSTERS
-    global warped
+    global warped, shake_countY, pattern_num, boss_pattern_list, shake_countX, play_font
 
     dataclass_num = -1
 
@@ -927,13 +956,13 @@ def Fly():
         if m.type == 'fly': # fly가 맞다면
             if m.state == 'idle':
                 change_state_alert(dataclass_num)
-                if m.count <= 2000:
+                if m.count <= 1000:
                     if m.dir == -1:
                         m.x -= 0.5
                     elif m.dir == 1:
                         m.x += 0.5
                 else: # change
-                    if m.count > 2400:
+                    if m.count > 1300:
                         m.state = 'turn'
                         m.count = 0
                         m.x_frame = 0
@@ -1037,20 +1066,31 @@ def Fly():
                 pass
 
         elif m.type == 'boss':
+            # draw_rectangle(int(m.bleft), int(m.bbottom), int(m.bright), int(m.btop))
             if m.state == 'sleep': # 대기상태, F 상호작용 가능
                 pass
 
             elif m.state == 'boss_idle': # 50% 확률로 
-                if m.count <= 600:
+
+                if m.count <= 300:
                     if m.dir == -1:
-                        m.x -= 0.5
+                        m.x -= 0.2
+
                     elif m.dir == 1:
-                        m.x += 0.5
+                        m.x += 0.2
+
+                    if 100 <= m.count <= 200: 
+                            m.y -= 0.1
+                    else: m.y += 0.1
+
                 else: # count 다 소모되면
-                    if randint(0, 1):
+                    temp_int = randint(0, 4)
+                    if temp_int == 4:
                         m.state = 'warp'
                     else: # to warp
-                        m.state = 'warp'
+                        m.state = 'attack'
+                    m.count = 0
+                    m.x_frame = 0
 
             elif m.state == 'warp': # 현재 위치에 warp 애니메이션, 애니메이션 한 번 후 워프 위치에
                                     # 이때는 그리지 않음
@@ -1078,16 +1118,146 @@ def Fly():
                     m.x_frame = 0
 
             elif m.state == 'attack':
-                pass
+                # print(f'count = {m.count}, state = {m.state}')
+                if m.count == 1:
+                    # print('patterned!')
+                    pattern_num = randint(1, 5)
+                    global sound_boss_attack
+                    sound_boss_attack[pattern_num - 1].play()
+
+                    if pattern_num != 5 and pattern_num != 2:
+                        for p in boss_pattern_list[pattern_num]:
+                            boss_pattern_down(p)
+                    
+                    # print(f'{pattern_num}, {boss_pattern_list[pattern_num]}')
+                
+                elif 20 <= m.count <= 230:
+                    # print(f'bossed, {pattern_num}')
+                    if pattern_num == 5:
+                        if m.count == 20:
+                            boss_pattern_down(0)
+                            boss_pattern_down(14)
+                        elif m.count == 50:
+                            boss_pattern_down(1)
+                            boss_pattern_down(13)
+                        elif m.count == 80:
+                            boss_pattern_down(2)
+                            boss_pattern_down(12)
+                        elif m.count == 110:
+                            boss_pattern_down(3)
+                            boss_pattern_down(11)
+                        elif m.count == 140:
+                            boss_pattern_down(4)
+                            boss_pattern_down(10)
+                        elif m.count == 170:
+                            boss_pattern_down(5)
+                            boss_pattern_down(9)
+                        elif m.count == 200:
+                            boss_pattern_down(6)
+                            boss_pattern_down(8)
+                        elif m.count == 230:
+                            boss_pattern_down(7)
+
+                    elif pattern_num == 2:
+                        # 0, 2, 4, 6, 8, 10, 12, 14
+                        if m.count == 20:
+                            boss_pattern_down(0)
+                            boss_pattern_down(2)
+                            boss_pattern_down(4)
+                            boss_pattern_down(6)
+                            boss_pattern_down(8)
+                            boss_pattern_down(10)
+                            boss_pattern_down(12)
+                            boss_pattern_down(14)
+                        elif m.count == 200:
+                            boss_pattern_down(1)
+                            boss_pattern_down(3)
+                            boss_pattern_down(5)
+                            boss_pattern_down(7)
+                            boss_pattern_down(9)
+                            boss_pattern_down(11)
+                            boss_pattern_down(13)
+
+                if pattern_num != 5 and pattern_num != 2:
+                    if m.count >= 340:
+                        m.state = 'boss_idle'
+                        m.count = 0
+                        m.x_frame = 0
+                else:
+                    if m.count >= 400:
+                        m.state = 'boss_idle'
+                        m.count = 0
+                        m.x_frame = 0
 
             elif m.state == 'dying':
-                pass
+                if m.count == 1:
+                    global sound_boss_die
+                    sound_boss_die.play()
+                if m.count >= 600:
+                    m.state = 'dead'
+                else:
+                    if shake_countY == 0:
+                        shake_countY = 6
+                    if shake_countX == 0:
+                        shake_countX = 6
 
             elif m.state == 'dead':
+                play_font = load_font('resources/fonts/HeirofLightBold.ttf', 60)
+                play_font.draw(650, 600, 'Game Clear', (236, 230, 204))
+                play_font = load_font('resources/fonts/HeirofLightBold.ttf', 30)
+                play_font.draw(700, 530, 'Press Q to quit game', (236, 230, 204))
+
+                global bgm_boss, canQuitGame
+                bgm_boss.set_volume(15)
+                canQuitGame = True
+        
+            if m.hp <= 0 and m.state != 'dying' and m.state != 'dead':
+                m.state = 'dying'
+                m.count = 0
+                m.x_frame = 0
+                for m in MONSTERS:
+                    if m.type == 'pattern':
+                        m.state = 'hide'
+
+
+        elif m.type == 'pattern':
+            # draw_rectangle(int(m.bleft), int(m.bbottom), int(m.bright), int(m.btop))
+            if m.state == 'hide':
                 pass
+            elif m.state == 'ready':
+                if m.count >= 350:
+                    m.count = 0
+                    m.x_frame = 0
+                    m.state = 'drop'
+            elif m.state == 'drop':
+                if m.bottom - 5.0 <= BLOCKS[104].top: # 104번째 block
+                    global sound_pattern_impact
+                    sound_pattern_impact.play()
+                    m.x = MONSTERS_ORIGINAL_POS[dataclass_num].x
+                    m.y = MONSTERS_ORIGINAL_POS[dataclass_num].y
+                    if not shake_countY: shake_countY = 6
+                    m.count = 0
+                    m.x_frame = 0
+                    m.state = 'hide'
+                else:
+                    m.y -= 5.0
 
         m.count += 1
     monster_animation()
+
+def boss_pattern_down(given_num):
+    global MONSTERS
+    global sound_pattern_appear
+    num = 0
+    for m in MONSTERS:
+        if m.type == 'pattern':
+            if num == given_num:
+                if m.state == 'hide':
+                    sound_pattern_appear.play()
+                    m.state = 'ready'
+                    m.count = 0
+                    m.x_frame = 0
+            num += 1
 
 def change_state_alert(i):
     global MONSTERS, PLAYER_RECT
@@ -1135,6 +1305,18 @@ def monster_animation():
             if m.count % 30 == 29:
                 if m.state == 'boss_idle':
                     m.x_frame = (m.x_frame + 1) % 6
+                elif m.state == 'attack':
+                    m.x_frame = (m.x_frame + 1) % 8
+
+        elif m.type == 'pattern':
+            if m.count % 31 == 30:
+                if m.state == 'hide': pass
+                elif m.state == 'ready':
+                    if m.x_frame < 10:
+                        m.x_frame = (m.x_frame + 1) % 11
+                    else: m.x_frame = 10
+                elif m.state == 'drop':
+                    m.x_frame = (m.x_frame + 1) % 2
 
     monster_init()
 
@@ -1148,10 +1330,14 @@ def intersect_hit_by_monster():
     for m in MONSTERS:
         if m.btop > PLAYER_RECT.bottom and PLAYER_RECT.top > m.bbottom and m.bleft < PLAYER_RECT.right and PLAYER_RECT.left < m.bright \
           and player_state != 2 \
-          and not (10 <= DashCount <= 30): # 맞고 더블로 맞지 않게
-          if (m.state == 'alert' or m.state == 'alert_turn' or m.state == 'idle' or m.state == 'turn' or m.state == 'thorn'):
-            stop_screen(200)
+          and not (1 <= DashCount <= 30): # 맞고 더블로 맞지 않게
+          if (m.state == 'alert' or m.state == 'alert_turn' or m.state == 'idle' or m.state == 'turn' or m.state == 'thorn' or m.state == 'drop'):
+            global sound_hit
+            sound_hit.play()
+            stop_screen(150)
             player_state = 2
+            if m.state == 'drop' and player_hp != 1:
+                break_hp(player_hp)
             break_hp(player_hp)
             if shake_countX == 0: shake_countX = 6
           elif (m.state == 'teleport') or (m.state == 'on') or (m.state == 'sleep'):
@@ -1165,6 +1351,8 @@ def intersect_hit_by_monster():
             elif (m.state == 'on'):
                 if FPressed:
                     m.state = 'off'
+                    global sound_item_eat
+                    sound_item_eat.play()
                     player_full_hp += 1
                     player_hp += 1
             elif (m.state == 'sleep'):
@@ -1173,9 +1361,6 @@ def intersect_hit_by_monster():
     
     if not on:
         canPressF = False
-            
-def intersect_hit_by_boss():
-    pass
 
 def hit_god_count():
     global player_state, hit_count
@@ -1189,14 +1374,24 @@ def stop_screen(t):
     global stop_count, if_stop_screen, stop_count_limit
     if_stop_screen = True
     stop_count_limit = t
+    global bgm_field, bgm_boss, player_in_boss_stage
+    if player_in_boss_stage:
+        bgm_boss.set_volume(5)
+    else:
+        bgm_field.set_volume(5)
 
 def stop_screen_count():
     global stop_count, if_stop_screen, stop_count_limit
     global player_state, penable_dark
+    global bgm_field, bgm_boss, player_in_boss_stage
 
     if stop_count_limit > 0:
         stop_count += 1
         if stop_count == stop_count_limit:
+            if player_in_boss_stage:
+                bgm_boss.set_volume(32)
+            else:
+                bgm_field.set_volume(32)
             stop_count = 0
             if_stop_screen = False
             stop_count_limit = 0
@@ -1219,7 +1414,7 @@ def handle_events():
     for event in events:
         if event.type == SDL_QUIT:
             running = False
-            exit(0)
+            close_canvas()
 
         elif event.type == SDL_KEYDOWN:
             if event.key == SDLK_SPACE:
@@ -1234,20 +1429,6 @@ def handle_events():
                         block_y = block_y + JumpHeight
                         JumpHeight = 0
                         JumpTime = 0.0
-                        player_on_block_num = -1
-                        blocks_init()
-
-                elif StageNum == 2:
-                    if (JumpKeyPressed == False):
-                        JumpKeyPressed = True
-                        player_on_block_num = -1
-
-                    elif (JumpKeyPressed == True and JumpAgain == False):
-                        JumpAgain = True
-                        is_falling = False
-                        player_move_y -= boss_stage_jump_value
-                        JumpTime = 0
-                        boss_stage_jump_value = 0
                         player_on_block_num = -1
                         blocks_init()
 
@@ -1268,11 +1449,11 @@ def handle_events():
 
             elif event.key == SDLK_DOWN:
                 DownKeyPressed, UpKeyPressed = True, False
+
             elif event.key == SDLK_z:
                 if player_state == 0:
                     player_state = 1
-            elif event.key == SDLK_ESCAPE:
-                running = False
+
             elif event.key == SDLK_u:
                 if show_blocks == False:
                     show_blocks = True
@@ -1283,15 +1464,22 @@ def handle_events():
                 if DashCoolTime <= 0:
                     DashCount = 33
                     if MoveCount > 60:
+                        global sound_dash
+                        sound_dash.play()
                         PlayDashAnime = True
 
             elif event.key == SDLK_f:
                 FPressed = True
             elif event.key == SDLK_a:
                 use_hp_gage()
-            elif event.key == SDLK_8:
-                if not warp_effect.show:
-                    boss_warp_effect(int(PLAYER_START_X), int(PLAYER_START_X))
+            elif event.key == SDLK_F10: # cheat
+                for m in MONSTERS:
+                    if m.type == 'boss' and m.type == 'sleep':
+                        m.hp = 10
+            elif event.key == SDLK_q:
+                if canQuitGame:
+                    running = False
+                    close_canvas()
 
 # ----------------------- shake test ---------------------------
 
@@ -1422,19 +1610,19 @@ def shake_anime_count():
 
     if   shake_countY == 0:  pass
 
-    elif shake_countY == 6:  shake_screen(0, -10)
-    elif shake_countY == 5:  shake_screen(0, -15)
-    elif shake_countY == 4:  shake_screen(0,  20)
-    elif shake_countY == 3:  shake_screen(0,  15)
-    elif shake_countY == 2:  shake_screen(0,  -5)
-    elif shake_countY == 1:  shake_screen(0,  -5)
+    elif shake_countY == 6:  shake_screen(0, -5)
+    elif shake_countY == 5:  shake_screen(0, -8)
+    elif shake_countY == 4:  shake_screen(0,  10)
+    elif shake_countY == 3:  shake_screen(0,  7)
+    elif shake_countY == 2:  shake_screen(0,  -2)
+    elif shake_countY == 1:  shake_screen(0,  -2)
 
-    elif shake_countY == -6: shake_screen(0,  10)
-    elif shake_countY == -5: shake_screen(0,  15)
-    elif shake_countY == -4: shake_screen(0, -20)
-    elif shake_countY == -3: shake_screen(0, -15)
-    elif shake_countY == -2: shake_screen(0,   5)
-    elif shake_countY == -1: shake_screen(0,   5)
+    elif shake_countY == -6: shake_screen(0,  5)
+    elif shake_countY == -5: shake_screen(0,  8)
+    elif shake_countY == -4: shake_screen(0, -10)
+    elif shake_countY == -3: shake_screen(0, -7)
+    elif shake_countY == -2: shake_screen(0,   2)
+    elif shake_countY == -1: shake_screen(0,   2)
 
 
 
@@ -1574,7 +1762,7 @@ def animation_count():
         count = 0
 
 def init_image():
-    global white_rect, hero_right, hero_left, ex_map, ex_block
+    global white_rect, hero_right, hero_left, ex_block
     global fly_idle, fly_chase, fly_die, fly_turn_left, fly_shock
     global tiktik_idle, tiktik_dying, tiktik_stun
     global hp_o, hp_x, hit_effect_image, hp_breaking
@@ -1596,7 +1784,6 @@ def init_image():
     hero_right_40 = load_image('resources/knight_hero_right_40.png')
     hero_right_70 = load_image('resources/knight_hero_right_70.png')
 
-    ex_map = load_image('resources/map_ex.png')
     ex_block = load_image('resources/first_map.png')
 
     fly_idle = load_image('resources/monsters/fly_idle.png')
@@ -1623,7 +1810,7 @@ def init_image():
     boss_idle = load_image('resources/monsters/boss_idle.png')
     boss_pattern_idle = load_image('resources/monsters/boss_pattern_idle.png')
     boss_pattern_attack = load_image('resources/monsters/boss_pattern_down.png')
-    # boss_attack
+    boss_attack = load_image('resources/monsters/boss_attack.png')
 
 def draw_player():
     # hero? 128x128
@@ -1820,11 +2007,27 @@ def draw_monster():
             item.draw(int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
 
         elif m.type == 'boss':
-            if m.state == 'boss_idle' or m.state == 'warp':
+            if m.state == 'boss_idle' or m.state == 'warp' or m.state == 'sleep':
                 boss_idle.clip_draw(boss_idle.w // 6 * m.x_frame, 0, boss_idle.w // 6, boss_idle.h,
                                     int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
-            elif m.state == 'sleep':
+            elif m.state == 'attack':
+                if m.x_frame <= 4:
+                    boss_attack.clip_draw(205 * m.x_frame, 0, 205, boss_attack.h,
+                                          int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2) - 44, m.width, m.height + 44)
+                else:
+                    boss_attack.clip_draw(1025 + (220 * (m.x_frame - 5)), 0, 220, boss_attack.h,
+                                          int(m.left) + (m.width // 2) - 7, int(m.bottom) + (m.height // 2) - 44, m.width, m.height+44)
+            elif m.state == 'dying':
                 pass
+
+        elif m.type == 'pattern':
+            if m.state == 'hide': pass
+            elif m.state == 'ready':
+                boss_pattern_idle.clip_draw(boss_pattern_idle.w // 11 * m.x_frame, 0, boss_pattern_idle.w // 11, boss_pattern_idle.h,
+                                            int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
+            elif m.state == 'drop':
+                boss_pattern_attack.clip_draw(boss_pattern_attack.w // 2 * m.x_frame, 0, boss_pattern_attack.w // 2, boss_pattern_attack.h,
+                                              int(m.left) + (m.width // 2), int(m.bottom) + (m.height // 2), m.width, m.height)
 
 def draw_hp():
     global player_hp, player_full_hp
@@ -1846,17 +2049,22 @@ def draw_hp_gage():
 
 def use_hp_gage():
     global player_hp_gage, player_hp, player_full_hp
+    global sound_a
 
     if player_hp_gage >= 5 and player_hp < player_full_hp:
+        sound_a.play()
         player_hp_gage -= 5
         player_hp += 1
 
 def break_hp(hp):
-    global hp_to_break, player_hp, player_state, hp_x_frame, teleport_type
+    global hp_to_break, player_hp, player_state, hp_x_frame, teleport_type, player_in_boss_stage
     
     if player_hp - 1 <= 0:
         player_state = 3
-        teleport_type = 'start'
+        if player_in_boss_stage:
+            teleport_type = 'front_boss'
+        else:
+            teleport_type = 'start'
         stop_screen(300)
         return
     
@@ -1879,15 +2087,64 @@ def draw_f_button():
         play_font.draw(PLAYER_RECT.left + 40 + 1, PLAYER_RECT.top + 1, 'F', (0, 0, 0))
         play_font.draw(PLAYER_RECT.left + 40, PLAYER_RECT.top, 'F', (255, 255, 255))
 
+def load_sounds():
+    global bgm_field, bgm_boss
+    bgm_field = load_music('resources/sounds/field.mp3')
+    bgm_boss = load_music('resources/sounds/boss.mp3')
+    bgm_field.set_volume(32)
+    bgm_boss.set_volume(32)
+    bgm_field.repeat_play()
+
+    global sound_dash, sound_jump, sound_hit, sound_attack, sound_attack_hit, sound_land
+    global sound_boss_attack, sound_boss_die, sound_item_eat, sound_a
+    global sound_pattern_impact, sound_pattern_appear
+    global sound_map_change
+
+    sound_attack = load_wav('resources/sounds/knight/attack.wav')
+    sound_attack_hit = load_wav('resources/sounds/knight/attack_hit.wav')
+    sound_hit = load_wav('resources/sounds/knight/get_hit.wav')
+    sound_item_eat = load_wav('resources/sounds/knight/item_eat.wav')
+    sound_jump = load_wav('resources/sounds/knight/jump.wav')
+    sound_land = load_wav('resources/sounds/knight/land.wav')
+    sound_dash = load_wav('resources/sounds/knight/dash.wav')
+    sound_a = load_wav('resources/sounds/knight/a.wav')
+
+    sound_dash.set_volume(32)
+    sound_jump.set_volume(32)
+    sound_hit.set_volume(32)
+    sound_attack.set_volume(32)
+    sound_attack_hit.set_volume(32)
+    sound_land.set_volume(32)
+    sound_a.set_volume(30)
+    
+    sound_boss_attack.append(load_wav('resources/sounds/boss/Elder_Hu_attack_01.wav'))
+    sound_boss_attack.append(load_wav('resources/sounds/boss/Elder_Hu_attack_02.wav'))
+    sound_boss_attack.append(load_wav('resources/sounds/boss/Elder_Hu_attack_03.wav'))
+    sound_boss_attack.append(load_wav('resources/sounds/boss/Elder_Hu_attack_04.wav'))
+    sound_boss_attack.append(load_wav('resources/sounds/boss/Elder_Hu_attack_05.wav'))
+    sound_boss_die = load_wav('resources/sounds/boss/Elder_Hu_death.wav')
+    sound_pattern_appear = load_wav('resources/sounds/boss/Elder_Hu_Ring_Appear.wav')
+    sound_pattern_impact = load_wav('resources/sounds/boss/Elder_Hu_Ring_Impact.wav')
+
+    for i in range(5):
+        sound_boss_attack[i].set_volume(32)
+    sound_boss_die.set_volume(23)
+    sound_pattern_appear.set_volume(32)
+    sound_pattern_impact.set_volume(32)
+
+    sound_map_change = load_wav('resources/sounds/UI/ui_map_update.wav')
+
 def Game_State():
     init_image()
 
     load_block()
     load_monster()
+    load_sounds()
 
     blocks_init()
     monster_init()
     player_init()
+    
     init_warp_effect()
     Fly()
     animation_count()
@@ -1907,7 +2164,7 @@ def Game_State():
 
             # draw(Xpos for start, Ypos for start, WIDTH /none, HEIGHT /none)
             ex_block.clip_draw(int(x - MoveDistance) // X_MOVE_POWER, int(y - JumpHeight) // Y_MOVE_POWER, 640, 360, 640, 360, 1280, 720)
-
+            
             draw_player()
             draw_monster()
             draw_hp()
@@ -1917,13 +2174,17 @@ def Game_State():
             draw_hp_gage()
             draw_warp_effect()
 
-            if show_blocks:
-                draw_rectangle(PLAYER_RECT.left, PLAYER_RECT.top, PLAYER_RECT.right, PLAYER_RECT.bottom)
-                for i in range(BLOCK_CNT):
-                    draw_rectangle(BLOCKS[i].left, BLOCKS[i].bottom, BLOCKS[i].right, BLOCKS[i].top)
+            # if show_blocks:
+            #     draw_rectangle(PLAYER_RECT.left, PLAYER_RECT.top, PLAYER_RECT.right, PLAYER_RECT.bottom)
+            #     for i in range(BLOCK_CNT):
+            #         draw_rectangle(BLOCKS[i].left, BLOCKS[i].bottom, BLOCKS[i].right, BLOCKS[i].top)
 
             pdark_animation()
             pdraw_dark()
+            # draw_rectangle(PLAYER_RECT.left - 80, PLAYER_RECT.bottom - 150, PLAYER_RECT.right + 80, PLAYER_RECT.top)
+            # draw_rectangle(PLAYER_RECT.left - 80, PLAYER_RECT.bottom, PLAYER_RECT.right + 80, PLAYER_RECT.top + 150)
+            # draw_rectangle(PLAYER_RECT.left - 150, PLAYER_RECT.bottom - 50, PLAYER_RECT.right, PLAYER_RECT.top + 50)
+            # draw_rectangle(PLAYER_RECT.left, PLAYER_RECT.bottom - 50, PLAYER_RECT.right + 150, PLAYER_RECT.top + 50)
 
             if if_stop_screen == False:
                 handle_events()
@@ -1940,7 +2201,6 @@ def Game_State():
                 attack_effect_count()
                 animation_count()
                 intersect_hit_by_monster()
-                intersect_hit_by_boss()
                 hit_god_count()
                 warp_effect_count()
 
@@ -1952,15 +2212,16 @@ def Game_State():
 
         global frame_time
         frame_time = time.time() - current_time
-        frame_rate = 1.0 / frame_time
-        if frame_rate > 140:
-            frame_for = 2
-        elif frame_rate > 110:
-            frame_for = 3
-        elif frame_rate > 80:
-            frame_for = 4
-        else: frame_for = 5
-        current_time += frame_time
+        if not frame_time <= 0.001:
+            frame_rate = 1.0 / frame_time
+            if frame_rate > 140:
+                frame_for = 2
+            elif frame_rate > 110:
+                frame_for = 3
+            elif frame_rate > 80:
+                frame_for = 4
+            else: frame_for = 5
+            current_time += frame_time
         # print(f'Frame Time: {frame_time}, Frame Rate: {frame_rate}')
 
     close_canvas()

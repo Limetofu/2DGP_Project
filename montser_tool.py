@@ -185,6 +185,14 @@ def handle_events():
                 blue_left = left
                 blue_bottom = bottom
                 blue_type = 6
+            elif event.key == SDLK_7:
+                if draw_blue == True:
+                    draw_blue = False
+                    return
+                draw_blue = True
+                blue_left = left
+                blue_bottom = bottom
+                blue_type = 7
         
 
         elif event.type == SDL_KEYUP:
@@ -326,7 +334,7 @@ while running:
         # 몬스터 draw
         if blocks[i].type == 1:
             block_blue.draw(blocks[i].left + (blocks[i].width // 2), blocks[i].bottom + (blocks[i].height // 2), blocks[i].width, blocks[i].height)
-        elif blocks[i].type == 2:
+        elif blocks[i].type == 2 or blocks[i].type == 7:
             block_white.draw(blocks[i].left + (blocks[i].width // 2), blocks[i].bottom + (blocks[i].height // 2), blocks[i].width, blocks[i].height)
         elif blocks[i].type == 3 or blocks[i].type == 4 or blocks[i].type == 5 or blocks[i].type == 6:
             block_black.draw(blocks[i].left + (blocks[i].width // 2), blocks[i].bottom + (blocks[i].height // 2), blocks[i].width, blocks[i].height)
@@ -370,32 +378,3 @@ with open('monster_data.txt', 'w') as file:
 
 
 close_canvas()
-
-
-'''
-    class BLOCK:
-        x: int
-        y: int
-        type: int
-
-    blocks = []
-    grid_data = []
-
-    file = open("grid_data.txt", "r")
-        # 파일 열기. 뒤의 인자는 C와 동일
-    before_strings = file.readlines()
-        # 개행 문자 포함, 리스트 형식 return
-    file.close()
-
-    # 개행 문자 제거
-    for i in before_strings:
-        tmp_str = i.replace('\n', '')
-        grid_data.append(tmp_str)
-
-    # BLOCK 구조체 생성, 붙여넣기.
-    for i in range(0, 1000000):
-        blocks.append(BLOCK())
-        blocks[i].x = grid_data[i][0:4]
-        blocks[i].y = grid_data[i][5:9]
-        blocks[i].type = grid_data[i][10]
-'''

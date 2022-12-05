@@ -2,6 +2,7 @@ from mj_values import *
 from pico2d import *
 import play_state
 import key_guide_state
+import time
 
 def shake_screen(xvalue, yvalue):
     global menu_backgroundX, menu_backgroundY
@@ -70,12 +71,13 @@ def handle_event():
     global enter_pressed
 
     global enable_dark
+    global ui_change, ui_select
 
     Mevents = get_events()
     for event in Mevents:
         if event.type == SDL_QUIT:
+            logo_running = False
             close_canvas()
-            exit(0)
 
         elif event.type == SDL_KEYDOWN:
             if event.key == SDLK_DOWN:
@@ -87,6 +89,9 @@ def handle_event():
                     menu_num = 1
                 else:
                     menu_num += 1
+
+                ui_change.play(1)
+
             elif event.key == SDLK_UP:
                 menu_left_x_frame = 0
                 if shake_count_menuY == 0:
@@ -97,8 +102,11 @@ def handle_event():
                 else:
                     menu_num -= 1
 
+                ui_change.play(1)
+
             elif event.key == SDLK_RETURN:
                 enter_pressed = True
+                ui_select.play(1)
             
             elif event.key == SDLK_y:
                 enable_dark = True
@@ -134,6 +142,7 @@ def draw_dark():
 
     if dark_count >= 1:
         hun[dark_count].draw_to_origin(0, 0, 1280, 720)
+    global bgm_menu
 
 def draw_background():
     global menu_background, menu_backgroundX, menu_backgroundY
@@ -201,6 +210,16 @@ def init_image_menu():
         hun.append(load_image('resources/menu/90.png'))
         hun.append(load_image('resources/menu/100.png'))
 
+def load_menu_bgm():
+    global bgm_menu
+    bgm_menu = load_music('resources/sounds/menu.mp3')
+    bgm_menu.set_volume(32)
+    bgm_menu.repeat_play()
+
+    global ui_change, ui_select
+    ui_change = load_wav('resources/sounds/UI/ui_change_selection.wav')
+    ui_select = load_wav('resources/sounds/UI/ui_button_confirm.wav')
+
 def init_menu_values():
     global logo_running, menu_anime_count, shake_count_menuY, shake_count_menuX
     global menu_backgroundX, menu_backgroundY
@@ -248,11 +267,13 @@ def Title_Menu_State():
     enable_dark = True
 
     init_menu_values()
-
+    load_menu_bgm()
     init_image_menu()
+
     while logo_running:
 
         clear_canvas()
+
         move_background()
         draw_background()
         draw_letters()
@@ -285,7 +306,7 @@ def Title_Menu_State():
 
             elif (menu_num == 3):
                 close_canvas()
-                exit(0)
+                logo_running = False
 
 if __name__ == '__main__':
     open_canvas(1280, 720, sync=True)

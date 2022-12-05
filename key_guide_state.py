@@ -59,13 +59,13 @@ def kdraw_dark():
 
 def handle_event():
     global esc_pressed
-    global enable_dark
+    global enable_dark, key_running
 
     Mevents = get_events()
     for event in Mevents:
         if event.type == SDL_QUIT:
             close_canvas()
-            exit(0)
+            key_running = False
 
         elif event.type == SDL_KEYDOWN:
 

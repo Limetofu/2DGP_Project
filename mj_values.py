@@ -13,6 +13,12 @@ PLAYER_START_Y = 6400.0
 START_BLOCK_X = -PLAYER_START_X
 START_BLOCK_Y = -PLAYER_START_Y
 
+BOSS_ROOM_X = 9350.0
+BOSS_ROOM_Y = 5950.0
+
+FRONT_BOSS_ROOM_X = 11600.0
+FRONT_BOSS_ROOM_Y = 800.0
+
 # 보스방 앞 좌표 만들어야 함
 teleport_type = ''
 
@@ -24,9 +30,13 @@ BLOCK_CNT = 0
 
 x = PLAYER_START_X
 y = PLAYER_START_Y # 시작점
+# x = FRONT_BOSS_ROOM_X
+# y = FRONT_BOSS_ROOM_Y
 
-block_x = START_BLOCK_X
-block_y = START_BLOCK_Y # 시작점의 역수로 잡아야 블럭의 위치가 잡힘
+player_in_boss_stage = False
+
+block_x = -x
+block_y = -y # 시작점의 역수로 잡아야 블럭의 위치가 잡힘
 
 diameter = 20.0
 
@@ -72,6 +82,25 @@ boss_idle, boss_pattern_idle, boss_attack = None, None, None
 boss_pattern_attack = None
 
 warped = False
+pattern_num = 0
+
+# 0 ~ 14번까지 있음
+boss_pattern_list = \
+[[],
+ [0, 1, 2, 4, 6, 7, 8, 10, 12, 13, 14],
+ [],
+ [1, 2, 4, 5, 7, 8, 9, 11, 13, 14], 
+ [1, 3, 5, 6, 7, 9, 10, 11, 12, 14], []]
+
+
+sound_boss_attack = []
+sound_dash, sound_jump, sound_hit, sound_attack, sound_walk, sound_land = None, None, None, None, None, None
+sound_boss_die = None, None
+sound_attack_hit, sound_item_eat = None, None
+sound_pattern_appear = None
+sound_pattern_impact = None
+sound_map_change = None
+sound_a = None
 
 player_hp_gage = 7
 
@@ -133,9 +162,11 @@ pdark_dir = -1
 pdc = 0
 FPressed = False
 canPressF = False
+canQuitGame = False
 
 # ---------------------- menu --------------------------
-
+bgm_menu = None
+i_change, ui_select = None, None
 logo_running = True
 
 menu_anime_count = 0
