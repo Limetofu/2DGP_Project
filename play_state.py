@@ -366,6 +366,7 @@ def player_resurrection(dest = 'start'):
         bgm_boss.repeat_play()
 
     elif dest == 'front_boss':
+        player_hp = player_full_hp
         x = FRONT_BOSS_ROOM_X
         y = FRONT_BOSS_ROOM_Y # 시작점
 
